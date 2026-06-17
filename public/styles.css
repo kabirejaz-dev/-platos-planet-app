@@ -1,0 +1,5 @@
+body { font-family: system-ui, Arial, sans-serif; background:#f6f8fa; color:#111; margin:0; }
+.container { max-width:800px; margin:40px auto; padding:20px; background:#fff; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
+header h1 { margin:0 0 10px; }
+#features { list-style:disc; padding-left:20px; }
+footer { margin-top:20px; color:#666; }
