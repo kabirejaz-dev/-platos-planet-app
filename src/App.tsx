@@ -1,10 +1,9 @@
-import { lazy, Suspense } from 'react'
+import { lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { AppShell } from '@/components/layout/AppShell'
 import { Toaster } from '@/components/ui/Toaster'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
-import { PageLoader } from '@/components/ui/PageLoader'
 
 // Auth
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'))
@@ -84,8 +83,7 @@ export default function App() {
     <BrowserRouter>
       <ErrorBoundary>
         <Toaster />
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
+        <Routes>
             {/* Auth */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/" element={<Navigate to={currentUser ? `/${currentUser.role.replace('_', '-')}` : '/login'} replace />} />
@@ -189,7 +187,6 @@ export default function App() {
             {/* Catch-all */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </Suspense>
       </ErrorBoundary>
     </BrowserRouter>
   )
