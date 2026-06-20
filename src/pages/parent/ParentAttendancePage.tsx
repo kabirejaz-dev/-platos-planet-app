@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatDate } from '@/lib/utils'
 import { CheckCircle2, XCircle, Clock, MinusCircle, TrendingUp } from 'lucide-react'
 import type { AttendanceStatus } from '@/types'
@@ -41,7 +40,6 @@ export default function ParentAttendancePage() {
       <PageHeader
         title="Attendance"
         subtitle={`${child.name}'s attendance record`}
-        badge={<DemoBadge />}
       />
 
       {/* Stats */}

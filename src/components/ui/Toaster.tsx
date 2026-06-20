@@ -19,7 +19,7 @@ function ToastItem({ t, onRemove }: { t: Toast; onRemove: (id: string) => void }
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -16, scale: 0.95 }}
       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-      className="flex items-start gap-3 px-4 py-3 rounded-2xl min-w-[280px] max-w-sm"
+      className="relative flex items-start gap-3 px-4 py-3 rounded-2xl min-w-[280px] max-w-sm overflow-hidden"
       style={{
         background: 'rgba(11,15,30,0.97)',
         border: `1px solid ${border}`,
@@ -53,6 +53,13 @@ function ToastItem({ t, onRemove }: { t: Toast; onRemove: (id: string) => void }
       >
         <X size={13} />
       </button>
+      <motion.div
+        className="absolute bottom-0 left-0 h-[2px]"
+        style={{ background: color }}
+        initial={{ width: '100%' }}
+        animate={{ width: '0%' }}
+        transition={{ duration: t.duration / 1000, ease: 'linear' }}
+      />
     </motion.div>
   )
 }
@@ -63,11 +70,12 @@ export function Toaster() {
   useEffect(() => subscribe(setItems), [subscribe, setItems])
 
   const remove = (id: string) => setItems((prev) => prev.filter((t) => t.id !== id))
+  const visible = items.slice(-3)
 
   return (
     <div className="fixed bottom-5 right-5 z-[200] flex flex-col gap-2 items-end pointer-events-none">
       <AnimatePresence mode="popLayout">
-        {items.map((t) => (
+        {visible.map((t) => (
           <div key={t.id} className="pointer-events-auto">
             <ToastItem t={t} onRemove={remove} />
           </div>

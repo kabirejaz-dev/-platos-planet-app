@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatDate, formatCurrency, generateId } from '@/lib/utils'
 import { AlertCircle, Clock, CheckCircle2, DollarSign, Send, MessageCircle } from 'lucide-react'
 import { toast } from '@/components/ui/Toaster'
@@ -34,6 +33,18 @@ export default function OutstandingFeesPage() {
 
   const overdueInvoices = outstanding.filter((i) => i.status === 'overdue')
 
+  const agingBuckets = [
+    { label: 'Current (0–30 days)', test: (d: number) => d <= 30, color: '#00FFA3' },
+    { label: '31–60 days', test: (d: number) => d > 30 && d <= 60, color: '#FBBF24' },
+    { label: '61–90 days', test: (d: number) => d > 60 && d <= 90, color: '#FF9500' },
+    { label: '90+ days', test: (d: number) => d > 90, color: '#FF6B7A' },
+  ].map((bucket) => {
+    const matching = outstanding.filter((inv) => bucket.test(Math.max(0, daysOverdue(inv.dueDate))))
+    const amount = matching.reduce((sum, inv) => sum + (inv.totalAmount - (inv.paidAmount || 0)), 0)
+    return { ...bucket, count: matching.length, amount }
+  })
+  const agingMax = Math.max(1, ...agingBuckets.map((b) => b.amount))
+
   const handleSendReminders = () => {
     if (!currentUser) return
     let sent = 0
@@ -60,7 +71,6 @@ export default function OutstandingFeesPage() {
       <PageHeader
         title="Outstanding Fees"
         subtitle="Pending and overdue invoices"
-        badge={<DemoBadge />}
         actions={
           <button className="btn-primary" disabled={overdueInvoices.length === 0} onClick={handleSendReminders}>
             <Send size={14} /> Send Reminders to All Overdue ({overdueInvoices.length})
@@ -82,9 +92,29 @@ export default function OutstandingFeesPage() {
         ))}
       </div>
 
+      {/* Aging summary */}
+      <div className="plato-card p-4">
+        <p className="text-[12px] font-semibold text-white/50 uppercase tracking-widest mb-3">Aging Summary</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {agingBuckets.map((b) => (
+            <div key={b.label} className="space-y-1.5">
+              <p className="text-[11px] text-white/40">{b.label}</p>
+              <p className="text-[14px] font-bold" style={{ color: b.amount > 0 ? b.color : 'rgba(255,255,255,0.3)' }}>
+                {formatCurrency(b.amount, currency)}
+              </p>
+              <p className="text-[10px] text-white/30">{b.count} invoice{b.count === 1 ? '' : 's'}</p>
+              <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${(b.amount / agingMax) * 100}%`, background: b.color }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Invoice list */}
       <div className="plato-card overflow-hidden">
-        <table className="plato-table">
+        <div className="overflow-x-auto">
+          <table className="plato-table">
           <thead>
             <tr>
               <th>Invoice</th>
@@ -172,6 +202,7 @@ export default function OutstandingFeesPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {recordPaymentFor && (

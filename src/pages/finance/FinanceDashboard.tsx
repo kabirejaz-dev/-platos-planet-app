@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatCurrency, formatDate, getStatusColor, getLastNMonths } from '@/lib/utils'
 import { Link } from 'react-router-dom'
@@ -11,6 +10,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { CreateInvoiceModal } from '@/components/finance/CreateInvoiceModal'
 import { RecordPaymentModal } from '@/components/finance/RecordPaymentModal'
 import { InvoiceDetailModal } from '@/components/finance/InvoiceDetailModal'
+import { InsightsStrip, type Insight } from '@/components/ui/InsightsStrip'
 
 export default function FinanceDashboard() {
   const { invoices, students, branches, settings } = useAppStore()
@@ -80,18 +80,38 @@ export default function FinanceDashboard() {
     })
     .filter((r) => r.invoiced > 0)
 
+  const overdueInvoices = invoices.filter((i) => i.status === 'overdue' && Math.floor((Date.now() - new Date(i.dueDate).getTime()) / 86400000) >= 10)
+  const overdueAmount = overdueInvoices.reduce((s, i) => s + (i.totalAmount - (i.paidAmount || 0)), 0)
+
+  const prevMonth = monthlyData[monthlyData.length - 2]
+  const collectionChangePct = prevMonth && prevMonth.collected > 0
+    ? Math.round(((currentMonth.collected - prevMonth.collected) / prevMonth.collected) * 100)
+    : null
+
+  const now = new Date()
+  const qYear = now.getFullYear(); const q = Math.floor(now.getMonth() / 3)
+  const quarterEnd = new Date(qYear, q * 3 + 3, 0)
+  const filingDeadline = new Date(quarterEnd); filingDeadline.setDate(filingDeadline.getDate() + 28)
+  const daysToVatDeadline = Math.ceil((filingDeadline.getTime() - now.getTime()) / 86400000)
+
+  const insights: Insight[] = []
+  if (overdueInvoices.length > 0) insights.push({ icon: '💳', text: <><strong>{formatCurrency(overdueAmount, settings.currency)}</strong> outstanding — {overdueInvoices.length} invoice{overdueInvoices.length === 1 ? '' : 's'} overdue by 10+ days</> })
+  if (collectionChangePct !== null) insights.push({ icon: collectionChangePct >= 0 ? '📈' : '📉', text: <>This month's collection is <strong>{Math.abs(collectionChangePct)}% {collectionChangePct >= 0 ? 'above' : 'below'}</strong> last month</>, tone: 'purple' })
+  if (daysToVatDeadline >= 0 && daysToVatDeadline <= 30) insights.push({ icon: '📄', text: <>VAT return due in <strong>{daysToVatDeadline} day{daysToVatDeadline === 1 ? '' : 's'}</strong></> })
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Financial Command Centre"
         subtitle={`${settings.currency} · ${settings.academicYear}`}
-        badge={<DemoBadge />}
         actions={
           <button className="btn-primary" onClick={() => setShowCreateInvoice(true)}>
             <FileText size={16} /> Create Invoice
           </button>
         }
       />
+
+      <InsightsStrip insights={insights} />
 
       {overdueCount > 0 && (
         <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#FF6B7A]/5 border border-[#FF6B7A]/20">
@@ -105,7 +125,7 @@ export default function FinanceDashboard() {
         <StatCard label="Total Collected" value={formatCurrency(totalCollected, settings.currency)} icon={<CheckCircle2 size={18} />} color="#00FFA3" />
         <StatCard label="Outstanding" value={formatCurrency(totalOutstanding, settings.currency)} icon={<AlertCircle size={18} />} color="#FF6B7A" />
         <StatCard label="Collection Rate" value={`${collectionRate}%`} icon={<TrendingUp size={18} />} color="#4D7CFF" sub={`${invoices.filter((i) => i.status === 'paid').length} of ${invoices.length} invoices`} />
-        <StatCard label="Overdue" value={overdueCount} icon={<AlertCircle size={18} />} color="#FF6B7A" demo={false} />
+        <StatCard label="Overdue" value={overdueCount} icon={<AlertCircle size={18} />} color="#FF6B7A" />
       </div>
 
       <div className="flex items-center gap-3 p-3 rounded-xl bg-white/3 border border-dark-border/50">
@@ -122,7 +142,6 @@ export default function FinanceDashboard() {
             <h3 className="text-sm font-semibold text-foreground">Monthly Collections</h3>
             <p className="text-xs text-muted-foreground">Collected vs Outstanding</p>
           </div>
-          <DemoBadge />
         </div>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={monthlyData} barGap={4}>
@@ -130,8 +149,8 @@ export default function FinanceDashboard() {
             <XAxis dataKey="month" tick={{ fill: '#6B7280', fontSize: 12 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill: '#6B7280', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
             <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E2940', borderRadius: 12, fontSize: 12 }} formatter={(v: number) => [`AED ${v.toLocaleString()}`, '']} />
-            <Bar dataKey="collected" fill="#00FFA3" radius={[4, 4, 0, 0]} name="Collected" />
-            <Bar dataKey="outstanding" fill="#FF6B7A" radius={[4, 4, 0, 0]} name="Outstanding" />
+            <Bar animationDuration={600} dataKey="collected" fill="#00FFA3" radius={[4, 4, 0, 0]} name="Collected" />
+            <Bar animationDuration={600} dataKey="outstanding" fill="#FF6B7A" radius={[4, 4, 0, 0]} name="Outstanding" />
           </BarChart>
         </ResponsiveContainer>
         {highestMonth && (

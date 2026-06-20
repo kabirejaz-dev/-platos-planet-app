@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Avatar } from '@/components/ui/Avatar'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { BookOpen, Clock, ChevronRight, X, Star } from 'lucide-react'
 
 export default function ClassesPage() {
@@ -35,7 +34,6 @@ export default function ClassesPage() {
       <PageHeader
         title="My Classes"
         subtitle={`${myBatches.length} active batches`}
-        badge={<DemoBadge />}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

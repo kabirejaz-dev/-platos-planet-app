@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Mail, Phone, Star, Award } from 'lucide-react'
 
@@ -16,7 +15,6 @@ export default function TeachersPage() {
       <PageHeader
         title="Teachers"
         subtitle={`${branchTeachers.length} faculty members`}
-        badge={<DemoBadge />}
       />
 
       {/* Stats */}

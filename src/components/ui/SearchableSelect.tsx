@@ -14,9 +14,10 @@ interface SearchableSelectProps {
   placeholder?: string
   emptyLabel?: string
   hasError?: boolean
+  id?: string
 }
 
-export function SearchableSelect({ options, value, onChange, placeholder = '— Select —', emptyLabel = 'No options available', hasError }: SearchableSelectProps) {
+export function SearchableSelect({ options, value, onChange, placeholder = '— Select —', emptyLabel = 'No options available', hasError, id }: SearchableSelectProps) {
   const selected = options.find((o) => o.id === value)
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -67,6 +68,7 @@ export function SearchableSelect({ options, value, onChange, placeholder = '— 
         onClick={() => setOpen(true)}
       >
         <input
+          id={id}
           className="flex-1 bg-transparent outline-none min-w-0"
           value={open ? search : selected?.label || ''}
           placeholder={selected ? selected.label : placeholder}

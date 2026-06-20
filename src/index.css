@@ -216,20 +216,6 @@
     border: 1px solid rgba(123,97,255,0.2);
   }
 
-  .badge-demo {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 10px;
-    border-radius: 100px;
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    background: rgba(251,191,36,0.08);
-    color: rgba(251,191,36,0.9);
-    border: 1px solid rgba(251,191,36,0.2);
-  }
-
   /* ── Metric card ───────────────────────────────────────────────────────── */
   .metric-card {
     @apply plato-card;
@@ -279,6 +265,7 @@
   .btn-primary {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     padding: 0.5625rem 1.25rem;
     border-radius: 10px;
@@ -312,6 +299,7 @@
   .btn-ghost {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     padding: 0.5rem 1rem;
     border-radius: 10px;
@@ -415,7 +403,48 @@
   to   { transform: rotate(360deg); }
 }
 
+@keyframes confetti-fall {
+  0%   { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(540deg); opacity: 0.9; }
+}
+
+@keyframes sparkle-border {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(0,255,163,0.3), 0 0 16px rgba(0,255,163,0.25); }
+  50%       { box-shadow: 0 0 0 1px rgba(0,255,163,0.6), 0 0 28px rgba(0,255,163,0.5); }
+}
+
+@keyframes amber-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251,191,36,0.5); }
+  50%       { box-shadow: 0 0 0 4px rgba(251,191,36,0.15); }
+}
+
+.animate-confetti-fall { animation: confetti-fall linear forwards; }
+.animate-sparkle-border { animation: sparkle-border 1s ease-in-out infinite; }
+.animate-amber-pulse { animation: amber-pulse 1.8s ease-in-out infinite; }
+
+/* ── Mobile touch targets (Apple HIG: 44x44 minimum) ─────────────────────── */
+@media (max-width: 767px) {
+  button, a[role="button"], .btn-primary, .btn-ghost, .nav-item {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ── Sticky first column for wide tables on small screens ────────────────── */
+@media (max-width: 767px) {
+  .plato-table { min-width: 640px; }
+  .plato-table th:first-child,
+  .plato-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: #0B0F1E;
+    z-index: 1;
+  }
+}
+
 .animate-float      { animation: float 6s ease-in-out infinite; }
+.animate-float-slow { animation: float 8s ease-in-out infinite; animation-delay: 1s; }
+.animate-float-slower { animation: float 10s ease-in-out infinite; animation-delay: 2s; }
 .animate-fade-up    { animation: fadeInUp 0.4s ease forwards; }
 .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
 .shimmer-bg {

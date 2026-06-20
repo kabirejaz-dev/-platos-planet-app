@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Avatar } from '@/components/ui/Avatar'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { FieldError, fieldInputClass } from '@/components/ui/FormField'
 import { generateId } from '@/lib/utils'
 import { batchSchema, getFieldErrors } from '@/lib/schemas'
@@ -74,7 +73,6 @@ export default function BatchesPage() {
       <PageHeader
         title="Batches"
         subtitle={`${branchBatches.length} class batches`}
-        badge={<DemoBadge />}
         actions={
           <button className="btn-primary" onClick={() => setShowModal(true)}>
             <Plus size={15} /> New Batch

@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Avatar } from '@/components/ui/Avatar'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatDate, formatCurrency, generateId, getGradeColor } from '@/lib/utils'
 import { toast } from '@/components/ui/Toaster'
 import { Search, GraduationCap, Star, Filter, MessageSquare, ExternalLink, X, Plus } from 'lucide-react'
@@ -101,7 +100,6 @@ export default function StudentsPage() {
       <PageHeader
         title="Students"
         subtitle={`${branchStudents.length} enrolled students`}
-        badge={<DemoBadge />}
         actions={
           <button className="btn-primary" onClick={() => setShowAddStudent(true)}>
             <Plus size={15} /> Add Student

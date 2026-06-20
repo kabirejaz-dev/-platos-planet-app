@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Modal } from '@/components/ui/Modal'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { X, Receipt, CheckCircle2, Clock, AlertCircle, Wallet, Building2, Phone } from 'lucide-react'
@@ -60,7 +59,6 @@ export default function ParentFeesPage() {
       <PageHeader
         title="Fees"
         subtitle="Invoice history and payment status"
-        badge={<DemoBadge />}
         actions={
           payableInvoices.length > 0 && (
             <button className="btn-primary" onClick={() => setShowPayNow(true)}>

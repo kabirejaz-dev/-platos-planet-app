@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatDate, gradeFromPercentage, getGradeColor } from '@/lib/utils'
 import { TrendingUp, BookOpen, Award, Target } from 'lucide-react'
 
@@ -54,11 +53,10 @@ export default function ProgressPage() {
       <PageHeader
         title={`${student.name}'s Progress`}
         subtitle={`${student.curriculum} · ${student.grade}`}
-        badge={<DemoBadge />}
       />
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Overall Average', value: overallAvg > 0 ? `${overallAvg}%` : '—', color: barColor(overallAvg), icon: <TrendingUp size={16} /> },
           { label: 'Grade', value: overallAvg > 0 ? gradeFromPercentage(overallAvg) : '—', color: '#7B61FF', icon: <Award size={16} /> },

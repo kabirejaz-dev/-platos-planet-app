@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatCurrency } from '@/lib/utils'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import { TrendingUp, Users, Target, DollarSign } from 'lucide-react'
@@ -36,7 +35,7 @@ export default function SalesReportsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Sales Reports" subtitle="Conversion rates, source analysis, and revenue attribution reports" badge={<DemoBadge />} />
+      <PageHeader title="Sales Reports" subtitle="Conversion rates, source analysis, and revenue attribution reports" />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="plato-card p-4 text-center">
@@ -69,8 +68,8 @@ export default function SalesReportsPage() {
               <XAxis dataKey="source" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 12 }} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-              <Bar dataKey="leads" name="Leads" fill="#4D7CFF" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="enrolled" name="Enrolled" fill="#00FFA3" radius={[6, 6, 0, 0]} />
+              <Bar animationDuration={600} dataKey="leads" name="Leads" fill="#4D7CFF" radius={[6, 6, 0, 0]} />
+              <Bar animationDuration={600} dataKey="enrolled" name="Enrolled" fill="#00FFA3" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -79,7 +78,7 @@ export default function SalesReportsPage() {
           <h3 className="text-[13px] font-semibold text-white/60 uppercase tracking-widest mb-4">Lead Source Distribution</h3>
           <ResponsiveContainer width="100%" height={240}>
             <PieChart>
-              <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2}>
+              <Pie animationDuration={600} data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2}>
                 {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
               </Pie>
               <Tooltip contentStyle={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 12 }} />

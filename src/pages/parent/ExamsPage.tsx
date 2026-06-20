@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatDate, gradeFromPercentage, getGradeColor, daysUntil } from '@/lib/utils'
 import { Calendar, Clock, Award, AlertCircle } from 'lucide-react'
 
@@ -27,7 +26,6 @@ export default function ExamsPage() {
       <PageHeader
         title="Exams & Results"
         subtitle={`${upcoming.length} upcoming · ${past.length} completed`}
-        badge={<DemoBadge />}
       />
 
       {/* Upcoming */}
@@ -83,7 +81,8 @@ export default function ExamsPage() {
             <Award size={13} /> Past Results
           </h3>
           <div className="plato-card overflow-hidden">
-            <table className="w-full plato-table">
+            <div className="overflow-x-auto">
+              <table className="w-full plato-table">
               <thead>
                 <tr>
                   <th>Exam</th><th>Subject</th><th>Date</th><th>Marks</th><th>Grade</th>
@@ -120,6 +119,7 @@ export default function ExamsPage() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}

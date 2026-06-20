@@ -3,7 +3,6 @@ import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { FieldError, RequiredMark, RequiredFieldsNote } from '@/components/ui/FormField'
 import { generateId, formatCurrency } from '@/lib/utils'
@@ -112,7 +111,6 @@ export default function BranchesPage() {
       <PageHeader
         title="Branches"
         subtitle={`${branches.length} branches · ${branches.filter((b) => b.isActive).length} active`}
-        badge={<DemoBadge />}
         actions={
           <button className="btn-primary" onClick={openCreate}>
             <Plus size={16} /> Add Branch

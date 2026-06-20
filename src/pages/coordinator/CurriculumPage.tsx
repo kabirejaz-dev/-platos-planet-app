@@ -1,8 +1,11 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
-import { BookOpen, AlertCircle } from 'lucide-react'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { BookOpen, AlertCircle, Grid3x3, Upload } from 'lucide-react'
+
+const HEATMAP_SUBJECTS = ['Physics', 'Chemistry', 'Biology', 'Mathematics', 'English', 'Computer Science']
+const HEATMAP_WEEKS = Array.from({ length: 12 }, (_, i) => `Week ${i + 1}`)
 
 export default function CurriculumPage() {
   const { batches, teachers, assessments, homework } = useAppStore()
@@ -33,7 +36,6 @@ export default function CurriculumPage() {
       <PageHeader
         title="Curriculum Coverage"
         subtitle={`${activeBatches.length} active batches · ${overallAvg}% overall coverage`}
-        badge={<DemoBadge />}
       />
 
       {/* Summary */}
@@ -50,6 +52,45 @@ export default function CurriculumPage() {
           <p className="text-[24px] font-bold font-display text-[#00FFA3]">{batchStats.filter((b) => b.overall >= 75).length}</p>
           <p className="text-[11px] text-white/30 mt-1">On Track</p>
         </div>
+      </div>
+
+      {/* Weekly coverage heat map */}
+      <div className="plato-card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Grid3x3 size={15} className="text-[#7B61FF]" /> Weekly Coverage Heat Map
+          </h3>
+        </div>
+        {/* No week-by-week syllabus plan exists in the data model yet (only
+            per-assessment topic tags) — show the grid skeleton plus the
+            import prompt rather than computing fabricated coverage numbers. */}
+        <div className="overflow-x-auto opacity-30 pointer-events-none select-none mb-2">
+          <table className="w-full text-[10px]">
+            <thead>
+              <tr>
+                <th className="text-left pr-3 py-1 text-white/40">Subject</th>
+                {HEATMAP_WEEKS.map((w) => <th key={w} className="px-1 py-1 text-white/30 whitespace-nowrap">{w}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {HEATMAP_SUBJECTS.map((subject) => (
+                <tr key={subject}>
+                  <td className="text-left pr-3 py-1 text-white/40 whitespace-nowrap">{subject}</td>
+                  {HEATMAP_WEEKS.map((w) => (
+                    <td key={w} className="px-1 py-1">
+                      <div className="w-6 h-6 rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <EmptyState
+          icon={<Upload size={22} />}
+          title="No syllabus data yet"
+          description="Import your syllabus to see coverage."
+        />
       </div>
 
       {/* Batch cards */}

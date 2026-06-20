@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Modal } from '@/components/ui/Modal'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { generateId, formatDate } from '@/lib/utils'
@@ -95,7 +94,6 @@ export default function ClassNotesPage() {
       <PageHeader
         title="Class Notes"
         subtitle="Keep a private lesson-by-lesson log, and share materials with students"
-        badge={<DemoBadge />}
       />
 
       {/* Tabs */}
@@ -121,7 +119,7 @@ export default function ClassNotesPage() {
           <div className="plato-card overflow-hidden lg:col-span-1">
             <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <h3 className="text-[13px] font-bold text-white/70">By Class & Date</h3>
-              <button onClick={startNewLog} className="text-[#4D7CFF] hover:text-[#7B61FF]" title="New lesson log">
+              <button onClick={startNewLog} className="text-[#4D7CFF] hover:text-[#7B61FF]" title="New lesson log" aria-label="New lesson log">
                 <Plus size={16} />
               </button>
             </div>

@@ -1,17 +1,26 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
 import { generateId, formatDate, timeAgo } from '@/lib/utils'
-import { Send, Mail, Plus } from 'lucide-react'
+import { Send, Mail, Plus, MessageCircle } from 'lucide-react'
 
 export default function MessagesPage() {
   const { currentUser, messages, users, teachers, parents, students, batches, markMessageRead, addMessage } = useAppStore()
+  const location = useLocation()
   const [showCompose, setShowCompose] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
   const [form, setForm] = useState({ to: '', subject: '', body: '' })
+
+  useEffect(() => {
+    const prefillTo = (location.state as { prefillTo?: string } | null)?.prefillTo
+    if (prefillTo) {
+      setForm((f) => ({ ...f, to: prefillTo }))
+      setShowCompose(true)
+    }
+  }, [location.state])
 
   const recipientOptions = (() => {
     if (!currentUser) return []
@@ -35,6 +44,11 @@ export default function MessagesPage() {
       return users.filter((u) => allowedIds.has(u.id))
     }
     return users.filter((u) => u.id !== currentUser.id)
+  })()
+
+  const recipientPhone = (() => {
+    if (!form.to) return null
+    return teachers.find((t) => t.userId === form.to)?.phone || parents.find((p) => p.userId === form.to)?.phone || null
   })()
 
   const myMessages = messages
@@ -72,7 +86,6 @@ export default function MessagesPage() {
       <PageHeader
         title="Messages"
         subtitle={`${inbox.filter((m) => !m.isRead).length} unread`}
-        badge={<DemoBadge />}
         actions={
           <button className="btn-primary" onClick={() => setShowCompose(true)}>
             <Plus size={16} /> Compose
@@ -195,6 +208,17 @@ export default function MessagesPage() {
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Message</label>
             <textarea className="plato-input resize-none h-32" placeholder="Write your message…" value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
           </div>
+          {recipientPhone && (
+            <a
+              href={`https://wa.me/${recipientPhone.replace(/\D/g, '')}?text=${encodeURIComponent(`${form.subject ? form.subject + '\n\n' : ''}${form.body}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-[12px] font-semibold transition-colors"
+              style={{ background: 'rgba(0,255,163,0.08)', border: '1px solid rgba(0,255,163,0.25)', color: '#00FFA3' }}
+            >
+              <MessageCircle size={13} /> Send via WhatsApp instead
+            </a>
+          )}
           <div className="flex gap-3 pt-2">
             <button className="btn-ghost flex-1 justify-center border border-dark-border" onClick={() => setShowCompose(false)}>Cancel</button>
             <button className="btn-primary flex-1 justify-center" onClick={handleSend} disabled={!form.to || !form.subject || !form.body}>

@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const SUBJECT_COLORS: Record<string, string> = {
@@ -26,7 +25,7 @@ export default function TimetablePage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Timetable" subtitle="Weekly class schedule" badge={<DemoBadge />} />
+      <PageHeader title="Timetable" subtitle="Weekly class schedule" />
 
       {/* Mobile: day-by-day list */}
       <div className="block lg:hidden space-y-4">

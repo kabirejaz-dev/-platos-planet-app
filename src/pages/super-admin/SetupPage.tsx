@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react'
 import { useAppStore, exportStoreSnapshot } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { toast } from '@/components/ui/Toaster'
 import { Settings, Download, Upload, AlertTriangle } from 'lucide-react'
 
@@ -58,7 +57,6 @@ export default function SetupPage() {
       <PageHeader
         title="Company Setup"
         subtitle="Configure your school's real data and switch from demo to live mode"
-        badge={<DemoBadge />}
       />
 
       <div className="plato-card p-5 space-y-4">

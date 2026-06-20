@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { PLANET_ORDER, PLANET_XP_THRESHOLDS } from '@/types'
 
 const PLANET_EMOJI: Record<string, string> = {
@@ -41,7 +40,7 @@ export default function AchievementsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Achievements" subtitle="Your badges and Planet Journey progress" badge={<DemoBadge />} />
+      <PageHeader title="Achievements" subtitle="Your badges and Planet Journey progress" />
 
       {/* Planet Journey */}
       <div className="plato-card p-6">

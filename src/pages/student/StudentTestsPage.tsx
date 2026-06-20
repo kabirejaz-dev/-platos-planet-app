@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatDate, gradeFromPercentage, getGradeColor } from '@/lib/utils'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts'
 import { PenTool, Calendar, CheckCircle2, Clock } from 'lucide-react'
@@ -55,7 +54,6 @@ export default function StudentTestsPage() {
       <PageHeader
         title="Tests & Results"
         subtitle={`${upcoming.length} upcoming · ${completed.length} completed`}
-        badge={<DemoBadge />}
       />
 
       {/* Summary stats */}
@@ -88,7 +86,7 @@ export default function StudentTestsPage() {
                 contentStyle={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, fontSize: 12 }}
                 formatter={(v: number) => [`${v}%`, 'Score']}
               />
-              <Bar dataKey="score" radius={[4, 4, 0, 0]}
+              <Bar animationDuration={600} dataKey="score" radius={[4, 4, 0, 0]}
                 fill="url(#barGradient)"
               />
               <defs>

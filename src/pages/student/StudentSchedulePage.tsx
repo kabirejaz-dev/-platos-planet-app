@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { MapPin } from 'lucide-react'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -27,7 +26,7 @@ export default function StudentSchedulePage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="My Schedule" subtitle="Your weekly class timetable" badge={<DemoBadge />} />
+      <PageHeader title="My Schedule" subtitle="Your weekly class timetable" />
 
       {/* Mobile: day-by-day list */}
       <div className="block lg:hidden space-y-4">

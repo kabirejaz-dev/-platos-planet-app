@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import { toast } from '@/components/ui/Toaster'
 import { FileText, Download, Users, DollarSign, GraduationCap, CalendarCheck, Loader2, Building2, Star, Target } from 'lucide-react'
@@ -158,7 +157,7 @@ export default function ReportsCentrePage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Reports Centre" subtitle="Generate real CSV exports computed from live platform data" badge={<DemoBadge />} />
+      <PageHeader title="Reports Centre" subtitle="Generate real CSV exports computed from live platform data" />
 
       <div className="grid grid-cols-3 gap-3">
         <div className="plato-card p-4 text-center">

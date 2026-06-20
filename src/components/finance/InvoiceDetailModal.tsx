@@ -132,6 +132,7 @@ export function InvoiceDetailModal({ open, onClose, invoiceId, onRecordPayment }
                         <button
                           className="text-muted-foreground hover:text-foreground"
                           title="Print receipt"
+                          aria-label="Print receipt"
                           onClick={() => printPaymentReceipt({
                             settings, invoice, student, parent, branch,
                             amountReceived: p.amount, previouslyPaid, paymentMethod: p.method,

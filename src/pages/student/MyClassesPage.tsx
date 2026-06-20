@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { calculateAttendanceRate } from '@/lib/utils'
 import { BookOpen, Clock, Users, MapPin, Calendar } from 'lucide-react'
@@ -43,7 +42,6 @@ export default function MyClassesPage() {
       <PageHeader
         title="My Classes"
         subtitle={`${myBatches.length} enrolled batches`}
-        badge={<DemoBadge />}
       />
 
       {myBatches.length === 0 ? (

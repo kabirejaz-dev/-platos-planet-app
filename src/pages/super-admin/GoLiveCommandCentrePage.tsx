@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, XCircle, AlertTriangle, ArrowRight, Rocket } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -89,7 +88,6 @@ export default function GoLiveCommandCentrePage() {
       <PageHeader
         title="Go-Live Command Centre"
         subtitle="Real-time launch readiness, computed from actual app state and audit findings"
-        badge={<DemoBadge />}
       />
 
       <div className="plato-card p-5">

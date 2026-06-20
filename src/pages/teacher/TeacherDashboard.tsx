@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
-import { formatDate, generateId } from '@/lib/utils'
+import { AttendanceRing } from '@/components/ui/AttendanceRing'
+import { formatDate, generateId, getNextClassSlot } from '@/lib/utils'
+import { InsightsStrip, type Insight } from '@/components/ui/InsightsStrip'
 import { toast } from '@/components/ui/Toaster'
 import { Link } from 'react-router-dom'
 import { BookOpen, Users, ClipboardList, ArrowRight, Calendar, CheckCircle2, Clock, ChevronDown, ChevronUp, X } from 'lucide-react'
@@ -43,6 +44,22 @@ export default function TeacherDashboard() {
   const todayMarkedBatchIds = new Set(todayAttendance.map((a) => a.batchId))
 
   const upcoming = myAssessments.filter((a) => a.status === 'upcoming')
+
+  const strugglingStudent = myStudents.find((student) => {
+    const gradedForStudent = myAssessments
+      .filter((a) => a.status === 'graded' && a.results.some((r) => r.studentId === student.id))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 2)
+    if (gradedForStudent.length < 2) return false
+    return gradedForStudent.every((a) => (a.results.find((r) => r.studentId === student.id)?.percentage || 0) < 60)
+  })
+
+  const nextClass = getNextClassSlot(myBatches)
+
+  const insights: Insight[] = []
+  if (strugglingStudent) insights.push({ icon: '⚠️', text: <><strong>{strugglingStudent.name}</strong> scored below 60% in the last 2 assessments — may need support</> })
+  if (pendingSubmissions > 0) insights.push({ icon: '📋', text: <><strong>{pendingSubmissions}</strong> homework submission{pendingSubmissions === 1 ? '' : 's'} not yet graded</> })
+  if (nextClass) insights.push({ icon: '📅', text: <>Next class: <strong>{nextClass.item.subject}</strong> · {nextClass.item.room || 'Room TBA'} — in {nextClass.daysUntil === 0 ? 'less than a day' : `${nextClass.daysUntil} day${nextClass.daysUntil === 1 ? '' : 's'}`}</>, tone: 'purple' })
 
   const toggleExpand = (batch: Batch) => {
     if (expandedBatchId === batch.id) { setExpandedBatchId(null); return }
@@ -84,15 +101,16 @@ export default function TeacherDashboard() {
       <PageHeader
         title={`Good ${new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, ${teacher.name.split(' ')[1]}`}
         subtitle={`${teacher.subjects.join(' · ')} · ${teacher.curriculums.join(', ')}`}
-        badge={<DemoBadge />}
       />
+
+      <InsightsStrip insights={insights} />
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="My Batches" value={myBatches.length} icon={<BookOpen size={18} />} color="#4D7CFF" demo={false} />
-        <StatCard label="Total Students" value={myStudentIds.length} icon={<Users size={18} />} color="#7B61FF" demo={false} />
-        <StatCard label="Pending Reviews" value={pendingSubmissions} icon={<ClipboardList size={18} />} color="#FF6B7A" demo={false} sub="Submitted homework" />
-        <StatCard label="Today Present" value={`${todayPresent}/${myStudentIds.length}`} icon={<CheckCircle2 size={18} />} color="#00FFA3" demo={false} />
+        <StatCard label="My Batches" value={myBatches.length} icon={<BookOpen size={18} />} color="#4D7CFF" />
+        <StatCard label="Total Students" value={myStudentIds.length} icon={<Users size={18} />} color="#7B61FF" />
+        <StatCard label="Pending Reviews" value={pendingSubmissions} icon={<ClipboardList size={18} />} color="#FF6B7A" sub="Submitted homework" />
+        <StatCard label="Today Present" value={`${todayPresent}/${myStudentIds.length}`} icon={<CheckCircle2 size={18} />} color="#00FFA3" />
       </div>
 
       {/* Today's classes */}
@@ -113,6 +131,8 @@ export default function TeacherDashboard() {
               const isSubmitted = todayMarkedBatchIds.has(batch.id)
               const isExpanded = expandedBatchId === batch.id
               const draft = drafts[batch.id]
+              const batchTodayAtt = todayAttendance.filter((a) => a.batchId === batch.id)
+              const batchTodayPresent = batchTodayAtt.filter((a) => a.status === 'present').length
 
               return (
                 <div key={batch.id} className="rounded-xl bg-white/3 border border-dark-border/50 hover:border-[#4D7CFF]/30 transition-all overflow-hidden">
@@ -132,11 +152,14 @@ export default function TeacherDashboard() {
                         <span className="text-xs text-muted-foreground">{batch.room || 'No room'}</span>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       {isSubmitted ? (
-                        <span className="text-xs px-3 py-1.5 rounded-lg bg-[#00FFA3]/10 text-[#00FFA3] font-semibold flex items-center gap-1.5">
-                          <CheckCircle2 size={13} /> Submitted
-                        </span>
+                        <>
+                          <AttendanceRing present={batchTodayPresent} total={batchTodayAtt.length} />
+                          <span className="text-xs px-3 py-1.5 rounded-lg bg-[#00FFA3]/10 text-[#00FFA3] font-semibold flex items-center gap-1.5">
+                            <CheckCircle2 size={13} /> {batchTodayPresent}/{batchTodayAtt.length} present
+                          </span>
+                        </>
                       ) : (
                         <button
                           onClick={() => toggleExpand(batch)}

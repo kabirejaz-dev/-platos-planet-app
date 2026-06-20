@@ -11,9 +11,9 @@ import {
 import { Avatar } from '@/components/ui/Avatar'
 import { cn } from '@/lib/utils'
 
-interface NavItem { label: string; path: string; icon: React.ReactNode }
+export interface NavItem { label: string; path: string; icon: React.ReactNode }
 
-function getNavItems(role: UserRole): NavItem[] {
+export function getNavItems(role: UserRole): NavItem[] {
   const navMap: Record<UserRole, NavItem[]> = {
     super_admin: [
       { label: 'Overview', path: '/super-admin', icon: <LayoutDashboard size={16} /> },
@@ -116,7 +116,7 @@ function getNavItems(role: UserRole): NavItem[] {
   return navMap[role] || []
 }
 
-const roleConfig: Record<UserRole, { label: string; color: string; bg: string }> = {
+export const roleConfig: Record<UserRole, { label: string; color: string; bg: string }> = {
   super_admin:  { label: 'Super Admin',        color: '#FF6B7A', bg: 'rgba(255,107,122,0.12)' },
   branch_admin: { label: 'Branch Admin',        color: '#4D7CFF', bg: 'rgba(77,124,255,0.12)' },
   sales:        { label: 'Sales & Admissions',  color: '#00FFA3', bg: 'rgba(0,255,163,0.12)' },
@@ -141,7 +141,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'flex flex-col h-full transition-all duration-300 flex-shrink-0',
+        'hidden md:flex flex-col h-full transition-all duration-300 flex-shrink-0',
         collapsed ? 'w-[64px]' : 'w-[240px]'
       )}
       style={{

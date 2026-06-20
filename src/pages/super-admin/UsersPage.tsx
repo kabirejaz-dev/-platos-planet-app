@@ -4,7 +4,6 @@ import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { MultiSelectChips } from '@/components/ui/MultiSelectChips'
 import { FieldError, RequiredMark, RequiredFieldsNote } from '@/components/ui/FormField'
 import { generateId, formatDate } from '@/lib/utils'
@@ -141,7 +140,6 @@ export default function UsersPage() {
       <PageHeader
         title="User Management"
         subtitle={`${users.length} total users across all roles`}
-        badge={<DemoBadge />}
         actions={
           <button className="btn-primary" onClick={openCreate}>
             <Plus size={16} /> Add User

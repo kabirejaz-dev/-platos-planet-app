@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { formatDate, getStatusColor } from '@/lib/utils'
@@ -28,7 +27,7 @@ export default function ScholarshipsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Scholarships" subtitle={`${pendingCount} pending review · ${approvedCount} approved`} badge={<DemoBadge />} />
+      <PageHeader title="Scholarships" subtitle={`${pendingCount} pending review · ${approvedCount} approved`} />
 
       <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
         {(['pending', 'all'] as const).map((f) => (

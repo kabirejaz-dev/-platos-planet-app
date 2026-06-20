@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatCurrency, calculateAttendanceRate } from '@/lib/utils'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { CalendarCheck, DollarSign, GraduationCap, Users } from 'lucide-react'
@@ -37,7 +36,7 @@ export default function BranchReportsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Branch Reports" subtitle="Comprehensive branch reports including attendance, academics, and revenue" badge={<DemoBadge />} />
+      <PageHeader title="Branch Reports" subtitle="Comprehensive branch reports including attendance, academics, and revenue" />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="plato-card p-4 text-center">
@@ -71,7 +70,7 @@ export default function BranchReportsPage() {
               <XAxis dataKey="week" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} />
               <Tooltip contentStyle={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 12 }} />
-              <Line type="monotone" dataKey="rate" stroke="#00FFA3" strokeWidth={2} dot={{ fill: '#00FFA3', r: 4 }} />
+              <Line animationDuration={600} type="monotone" dataKey="rate" stroke="#00FFA3" strokeWidth={2} dot={{ fill: '#00FFA3', r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>

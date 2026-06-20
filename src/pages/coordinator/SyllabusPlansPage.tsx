@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Modal } from '@/components/ui/Modal'
 import { generateId } from '@/lib/utils'
 import { CheckCircle2, Circle, Loader2, Plus, ChevronDown, ChevronUp } from 'lucide-react'
@@ -72,7 +71,6 @@ export default function SyllabusPlansPage() {
       <PageHeader
         title="Syllabus Plans"
         subtitle="Termly and weekly syllabus plans for all curricula and subjects — click a topic to advance its status"
-        badge={<DemoBadge />}
         actions={<button className="btn-primary" onClick={() => setShowModal(true)}><Plus size={15} /> New Plan</button>}
       />
 

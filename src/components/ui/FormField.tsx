@@ -4,7 +4,7 @@ export function RequiredMark() {
 
 export function FieldError({ message }: { message?: string }) {
   if (!message) return null
-  return <p className="text-[11px] text-[#FF6B7A] mt-1">{message}</p>
+  return <p role="alert" className="text-[11px] text-[#FF6B7A] mt-1">{message}</p>
 }
 
 export function RequiredFieldsNote() {

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatDate } from '@/lib/utils'
 import { toast } from '@/components/ui/Toaster'
@@ -99,7 +98,6 @@ export default function TrialsPage() {
       <PageHeader
         title="Trial Classes"
         subtitle={`${upcoming.length} upcoming · ${completed.length} completed`}
-        badge={<DemoBadge />}
       />
 
       {/* Stats */}

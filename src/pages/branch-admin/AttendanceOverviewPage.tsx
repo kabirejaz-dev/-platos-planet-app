@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
@@ -51,14 +50,13 @@ export default function AttendanceOverviewPage() {
       <PageHeader
         title="Attendance Overview"
         subtitle={`${overallRate}% attendance on ${new Date(selectedDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}`}
-        badge={<DemoBadge />}
         actions={
           <input type="date" className="plato-input text-[13px]" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} max={new Date().toISOString().split('T')[0]} />
         }
       />
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Present', value: overall.present, color: '#00FFA3' },
           { label: 'Absent', value: overall.absent, color: '#FF6B7A' },

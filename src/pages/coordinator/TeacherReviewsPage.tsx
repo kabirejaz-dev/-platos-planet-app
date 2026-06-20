@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatDate, generateId } from '@/lib/utils'
@@ -72,7 +71,6 @@ export default function TeacherReviewsPage() {
       <PageHeader
         title="Teacher Reviews"
         subtitle="Structured peer reviews and observation reports for teaching quality"
-        badge={<DemoBadge />}
         actions={<button className="btn-primary" onClick={() => openModal()}><Plus size={15} /> Write Review</button>}
       />
 

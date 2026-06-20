@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatDate } from '@/lib/utils'
 import { ClipboardList, CheckCircle2, Clock, AlertCircle, Upload } from 'lucide-react'
 
@@ -48,10 +47,10 @@ export default function ParentHomeworkPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Homework" subtitle={`${child.name}'s assignments`} badge={<DemoBadge />} />
+      <PageHeader title="Homework" subtitle={`${child.name}'s assignments`} />
 
       {/* Summary */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Total', value: counts.total, color: '#4D7CFF' },
           { label: 'Submitted', value: counts.submitted + counts.graded, color: '#00FFA3' },

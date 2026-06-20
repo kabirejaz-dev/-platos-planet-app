@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { StatCard } from '@/components/ui/StatCard'
 import { Avatar } from '@/components/ui/Avatar'
 import { gradeFromPercentage, getGradeColor } from '@/lib/utils'
@@ -59,7 +58,7 @@ export default function AcademicAnalyticsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Academic Analytics" subtitle="System-wide curriculum coverage, assessment results, and teacher performance" badge={<DemoBadge />} />
+      <PageHeader title="Academic Analytics" subtitle="System-wide curriculum coverage, assessment results, and teacher performance" />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Avg Score" value={`${avgScore}%`} icon={<Award size={18} />} color="#00FFA3" />
@@ -76,7 +75,7 @@ export default function AcademicAnalyticsPage() {
               <XAxis dataKey="curriculum" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} />
               <Tooltip contentStyle={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 12 }} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-              <Bar dataKey="avg" fill="#4D7CFF" radius={[6, 6, 0, 0]} />
+              <Bar animationDuration={600} dataKey="avg" fill="#4D7CFF" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -88,7 +87,7 @@ export default function AcademicAnalyticsPage() {
               <XAxis dataKey="branch" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} />
               <Tooltip contentStyle={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 12 }} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-              <Bar dataKey="avg" fill="#00FFA3" radius={[6, 6, 0, 0]} />
+              <Bar animationDuration={600} dataKey="avg" fill="#00FFA3" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -99,7 +98,7 @@ export default function AcademicAnalyticsPage() {
           <h3 className="text-[13px] font-semibold text-white/60 uppercase tracking-widest mb-4">Programme Enrollment</h3>
           <div className="flex justify-center">
             <PieChart width={160} height={160}>
-              <Pie data={programmeData} cx={80} cy={80} innerRadius={50} outerRadius={75} dataKey="value" strokeWidth={0}>
+              <Pie animationDuration={600} data={programmeData} cx={80} cy={80} innerRadius={50} outerRadius={75} dataKey="value" strokeWidth={0}>
                 {programmeData.map((entry, idx) => (
                   <Cell key={idx} fill={entry.color} />
                 ))}

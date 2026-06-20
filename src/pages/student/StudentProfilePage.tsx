@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatDateFull } from '@/lib/utils'
 import { toast } from '@/components/ui/Toaster'
@@ -46,7 +45,7 @@ export default function StudentProfilePage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="My Profile" subtitle="View your account and personal details" badge={<DemoBadge />} />
+      <PageHeader title="My Profile" subtitle="View your account and personal details" />
 
       {/* Header card */}
       <div className="plato-card p-5 flex items-center gap-4">

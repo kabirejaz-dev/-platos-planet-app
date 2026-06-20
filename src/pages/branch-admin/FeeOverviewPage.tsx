@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatCurrency, formatDate, getStatusColor, getLastNMonths } from '@/lib/utils'
 import { Wallet, CheckCircle2, Clock, AlertTriangle, DollarSign, MessageCircle } from 'lucide-react'
@@ -46,7 +45,7 @@ export default function FeeOverviewPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Fee Overview" subtitle="Outstanding, collected, and overdue fees for students in this branch" badge={<DemoBadge />} />
+      <PageHeader title="Fee Overview" subtitle="Outstanding, collected, and overdue fees for students in this branch" />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="plato-card p-4 text-center">
@@ -77,7 +76,6 @@ export default function FeeOverviewPage() {
             <h3 className="text-sm font-semibold text-foreground">Monthly Collections</h3>
             <p className="text-xs text-muted-foreground">Collected vs Outstanding · this branch</p>
           </div>
-          <DemoBadge />
         </div>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={monthlyData} barGap={4}>
@@ -85,8 +83,8 @@ export default function FeeOverviewPage() {
             <XAxis dataKey="month" tick={{ fill: '#6B7280', fontSize: 12 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill: '#6B7280', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
             <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E2940', borderRadius: 12, fontSize: 12 }} formatter={(v: number) => [`AED ${v.toLocaleString()}`, '']} />
-            <Bar dataKey="collected" fill="#00FFA3" radius={[4, 4, 0, 0]} name="Collected" />
-            <Bar dataKey="outstanding" fill="#FF6B7A" radius={[4, 4, 0, 0]} name="Outstanding" />
+            <Bar animationDuration={600} dataKey="collected" fill="#00FFA3" radius={[4, 4, 0, 0]} name="Collected" />
+            <Bar animationDuration={600} dataKey="outstanding" fill="#FF6B7A" radius={[4, 4, 0, 0]} name="Outstanding" />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -95,7 +93,8 @@ export default function FeeOverviewPage() {
         <div className="p-4 border-b border-white/5">
           <h3 className="text-[13px] font-semibold text-white/70">All Invoices</h3>
         </div>
-        <table className="w-full plato-table">
+        <div className="overflow-x-auto">
+          <table className="w-full plato-table">
           <thead><tr><th>Student</th><th>Invoice #</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>
             {sorted.map((inv) => {
@@ -141,6 +140,7 @@ export default function FeeOverviewPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {overdueInvoices.length > 0 && (

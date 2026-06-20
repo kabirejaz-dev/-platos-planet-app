@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { CreditCard, Search, DollarSign, Download, Printer } from 'lucide-react'
@@ -124,7 +123,7 @@ export default function CollectionPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Fee Collection" subtitle="Collect outstanding fees and review the payment log" badge={<DemoBadge />} />
+      <PageHeader title="Fee Collection" subtitle="Collect outstanding fees and review the payment log" />
 
       <div className="flex gap-1 p-1 bg-white/5 border border-dark-border rounded-xl w-fit">
         {(['collect', 'log'] as const).map((t) => (

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { toast } from '@/components/ui/Toaster'
 import { Save, Building2, CreditCard, Bell, Sparkles } from 'lucide-react'
 
@@ -33,7 +32,6 @@ export default function SystemSettingsPage() {
       <PageHeader
         title="System Settings"
         subtitle="Configure platform-wide settings, permissions, and notification preferences"
-        badge={<DemoBadge />}
         actions={<button className="btn-primary" onClick={handleSave}><Save size={14} /> Save Changes</button>}
       />
 

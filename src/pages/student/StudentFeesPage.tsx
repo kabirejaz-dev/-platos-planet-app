@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { X, Receipt, CheckCircle2, Clock, AlertCircle, Phone, Mail } from 'lucide-react'
 import type { Invoice } from '@/types'
@@ -35,7 +34,7 @@ export default function StudentFeesPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Fees & Payments" subtitle="Your invoice history and payment status" badge={<DemoBadge />} />
+      <PageHeader title="Fees & Payments" subtitle="Your invoice history and payment status" />
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">

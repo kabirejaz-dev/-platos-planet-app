@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { StatCard } from '@/components/ui/StatCard'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatCurrency, formatDate, getStatusColor, getLastNMonths } from '@/lib/utils'
@@ -13,11 +12,12 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts'
 import { Link } from 'react-router-dom'
+import { InsightsStrip, type Insight } from '@/components/ui/InsightsStrip'
 
 // Demo split across all 8 active programmes — combines the academic Curriculum
 // field with enrichment ProgrammeType, which aren't a shared denominator in the
-// real data model, so this chart is explicitly demo (see DemoBadge) rather than
-// computed live like the other charts on this page.
+// real data model, so this chart is static rather than computed live like the
+// other charts on this page.
 const PROGRAMME_SPLIT = [
   { name: 'IGCSE', value: 35, color: '#4D7CFF' },
   { name: 'A-Level', value: 22, color: '#7B61FF' },
@@ -64,12 +64,30 @@ export default function SuperAdminDashboard() {
     target: Math.round(monthMap[m.key] * 1.1),
   }))
 
+  const branchOccupancy = branches
+    .filter((b) => b.isActive && b.capacity > 0)
+    .map((b) => ({ branch: b, pct: Math.round((students.filter((s) => s.branchId === b.id && s.status === 'active').length / b.capacity) * 100) }))
+    .sort((a, b) => a.pct - b.pct)
+  const lowestBranch = branchOccupancy[0]
+
+  const overdueInvoices = invoices.filter((i) => i.status === 'overdue' && Math.floor((Date.now() - new Date(i.dueDate).getTime()) / 86400000) >= 10)
+  const overdueAmount = overdueInvoices.reduce((s, i) => s + (i.totalAmount - (i.paidAmount || 0)), 0)
+
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7)
+  const recentLeads = leads.filter((l) => new Date(l.createdAt) >= weekAgo)
+  const leadsByCurriculum = recentLeads.reduce<Record<string, number>>((acc, l) => { acc[l.curriculum] = (acc[l.curriculum] || 0) + 1; return acc }, {})
+  const topCurriculum = Object.entries(leadsByCurriculum).sort((a, b) => b[1] - a[1])[0]
+
+  const insights: Insight[] = []
+  if (lowestBranch && lowestBranch.pct < 80) insights.push({ icon: '📉', text: <><strong>{lowestBranch.branch.name}</strong> is at {lowestBranch.pct}% capacity — below target</> })
+  if (overdueInvoices.length > 0) insights.push({ icon: '💳', text: <><strong>{formatCurrency(overdueAmount)}</strong> in outstanding fees — {overdueInvoices.length} invoice{overdueInvoices.length === 1 ? '' : 's'} overdue by 10+ days</> })
+  if (topCurriculum) insights.push({ icon: '🔥', text: <><strong>{topCurriculum[0]}</strong> has the most leads this week ({topCurriculum[1]} new enquir{topCurriculum[1] === 1 ? 'y' : 'ies'})</>, tone: 'purple' })
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Executive Overview"
         subtitle={`${settings.companyName} · ${settings.academicYear}`}
-        badge={<DemoBadge />}
         actions={
           !settings.isLive && (
             <Link to="/super-admin/go-live" className="btn-primary">
@@ -92,6 +110,8 @@ export default function SuperAdminDashboard() {
           </Link>
         ))}
       </div>
+
+      <InsightsStrip insights={insights} />
 
       {/* Go Live Alert */}
       {!settings.isLive && (
@@ -130,7 +150,7 @@ export default function SuperAdminDashboard() {
           value={branches.filter((b) => b.isActive).length}
           icon={<Building2 size={18} />}
           color="#7B61FF"
-          demo={false}
+         
           change={0}
           changeLabel="vs last month"
         />
@@ -153,7 +173,6 @@ export default function SuperAdminDashboard() {
               <h3 className="text-sm font-semibold text-foreground">Revenue vs Target</h3>
               <p className="text-xs text-muted-foreground mt-0.5">Last 6 months (AED)</p>
             </div>
-            <DemoBadge />
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={revenueData}>
@@ -174,8 +193,8 @@ export default function SuperAdminDashboard() {
                 contentStyle={{ background: '#111827', border: '1px solid #1E2940', borderRadius: 12, fontSize: 12 }}
                 formatter={(v: number) => [`AED ${v.toLocaleString()}`, '']}
               />
-              <Area type="monotone" dataKey="revenue" stroke="#4D7CFF" strokeWidth={2} fill="url(#revGrad)" name="Revenue" />
-              <Area type="monotone" dataKey="target" stroke="#7B61FF" strokeWidth={2} strokeDasharray="4 4" fill="url(#targetGrad)" name="Target" />
+              <Area animationDuration={600} type="monotone" dataKey="revenue" stroke="#4D7CFF" strokeWidth={2} fill="url(#revGrad)" name="Revenue" />
+              <Area animationDuration={600} type="monotone" dataKey="target" stroke="#7B61FF" strokeWidth={2} strokeDasharray="4 4" fill="url(#targetGrad)" name="Target" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -184,11 +203,10 @@ export default function SuperAdminDashboard() {
         <div className="plato-card p-5">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-sm font-semibold text-foreground">Programme Split</h3>
-            <DemoBadge />
           </div>
           <div className="flex justify-center">
             <PieChart width={160} height={160}>
-              <Pie data={PROGRAMME_SPLIT} cx={80} cy={80} innerRadius={50} outerRadius={75} dataKey="value" strokeWidth={0}>
+              <Pie animationDuration={600} data={PROGRAMME_SPLIT} cx={80} cy={80} innerRadius={50} outerRadius={75} dataKey="value" strokeWidth={0}>
                 {PROGRAMME_SPLIT.map((entry, idx) => (
                   <Cell key={idx} fill={entry.color} />
                 ))}
@@ -217,7 +235,6 @@ export default function SuperAdminDashboard() {
       <div className="plato-card p-5">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-sm font-semibold text-foreground">Branch Performance</h3>
-          <DemoBadge />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {branches.map((branch) => {

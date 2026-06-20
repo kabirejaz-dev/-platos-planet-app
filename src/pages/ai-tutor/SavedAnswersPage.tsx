@@ -1,7 +1,6 @@
 import { type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { toast } from '@/components/ui/Toaster'
 import { formatDate } from '@/lib/utils'
@@ -44,7 +43,7 @@ export default function SavedAnswersPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Saved Answers" subtitle="Bookmark AI answers you found useful for later revision" badge={<DemoBadge />} />
+      <PageHeader title="Saved Answers" subtitle="Bookmark AI answers you found useful for later revision" />
 
       <div className="space-y-4">
         {savedAnswers.map(({ conv, msg }) => (

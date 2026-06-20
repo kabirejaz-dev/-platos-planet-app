@@ -13,6 +13,7 @@ export interface Toast {
   title: string
   message?: string
   action?: ToastAction
+  duration: number
 }
 
 let listeners: Array<(toasts: Toast[]) => void> = []
@@ -25,12 +26,13 @@ function emit() {
 export const toast = {
   show(type: ToastType, title: string, message?: string, action?: ToastAction) {
     const id = Math.random().toString(36).slice(2)
-    toasts = [...toasts, { id, type, title, message, action }]
+    const duration = action ? 7000 : 4000
+    toasts = [...toasts, { id, type, title, message, action, duration }]
     emit()
     setTimeout(() => {
       toasts = toasts.filter((t) => t.id !== id)
       emit()
-    }, action ? 7000 : 3500)
+    }, duration)
   },
   success: (title: string, message?: string, action?: ToastAction) => toast.show('success', title, message, action),
   error:   (title: string, message?: string, action?: ToastAction) => toast.show('error',   title, message, action),

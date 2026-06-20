@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatDate, formatTime, generateId } from '@/lib/utils'
 import { toast } from '@/components/ui/Toaster'
@@ -96,7 +95,6 @@ export default function MeetingsPage() {
       <PageHeader
         title="Meetings"
         subtitle={`${upcoming.length} upcoming`}
-        badge={<DemoBadge />}
         actions={
           <button className="btn-primary" onClick={() => setShowForm(!showForm)}>
             <Plus size={15} /> Book Meeting

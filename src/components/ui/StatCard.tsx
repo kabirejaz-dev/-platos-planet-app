@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { DemoBadge } from './DemoBadge'
 
 interface StatCardProps {
   label: string
@@ -10,8 +9,8 @@ interface StatCardProps {
   change?: number
   changeLabel?: string
   color?: string
-  demo?: boolean
   sub?: string
+  progress?: { current: number; max: number }
 }
 
 function AnimatedNumber({ value }: { value: number }) {
@@ -46,11 +45,13 @@ export function StatCard({
   change,
   changeLabel,
   color = '#4D7CFF',
-  demo = true,
   sub,
+  progress,
 }: StatCardProps) {
   const isPositive = change !== undefined && change >= 0
   const isNumeric = typeof value === 'number'
+  const progressPct = progress && progress.max > 0 ? Math.min(100, Math.round((progress.current / progress.max) * 100)) : null
+  const progressColor = progressPct === null ? color : progressPct > 90 ? '#FF6B7A' : progressPct >= 75 ? '#FBBF24' : '#00FFA3'
 
   return (
     <div
@@ -101,9 +102,19 @@ export function StatCard({
           <span className="text-[28px] font-bold leading-none font-display tracking-tight" style={{ color: '#F1F5F9' }}>
             {isNumeric ? <AnimatedNumber value={value as number} /> : value}
           </span>
-          {demo && <DemoBadge />}
         </div>
         {sub && <p className="text-[12px] mt-1" style={{ color: 'rgba(100,116,139,0.8)' }}>{sub}</p>}
+        {progressPct !== null && progress && (
+          <div className="mt-2.5">
+            <div className="flex items-center justify-between text-[11px] mb-1" style={{ color: 'rgba(100,116,139,0.8)' }}>
+              <span>{progress.current}/{progress.max}</span>
+              <span style={{ color: progressColor }}>{progressPct}%</span>
+            </div>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${progressPct}%`, background: progressColor }} />
+            </div>
+          </div>
+        )}
       </div>
 
       {change !== undefined && (

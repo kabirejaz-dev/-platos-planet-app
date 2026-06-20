@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatCurrency } from '@/lib/utils'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { TrendingUp, DollarSign, Users, Target } from 'lucide-react'
@@ -55,7 +54,6 @@ export default function ForecastsPage() {
       <PageHeader
         title="Revenue Forecasts"
         subtitle="6-month projection based on current enrolments"
-        badge={<DemoBadge />}
       />
 
       {/* KPIs */}
@@ -104,8 +102,8 @@ export default function ForecastsPage() {
             <XAxis dataKey="month" tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => v > 0 ? `${(v / 1000).toFixed(0)}k` : ''} />
             <Tooltip contentStyle={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 12 }} formatter={(v: number) => formatCurrency(v)} />
-            <Area type="monotone" dataKey="actual" stroke="#4D7CFF" strokeWidth={2} fill="url(#actualGrad)" dot={false} />
-            <Area type="monotone" dataKey="forecast" stroke="#00FFA3" strokeWidth={2} fill="url(#forecastGrad)" dot={false} strokeDasharray="4 4" />
+            <Area animationDuration={600} type="monotone" dataKey="actual" stroke="#4D7CFF" strokeWidth={2} fill="url(#actualGrad)" dot={false} />
+            <Area animationDuration={600} type="monotone" dataKey="forecast" stroke="#00FFA3" strokeWidth={2} fill="url(#forecastGrad)" dot={false} strokeDasharray="4 4" />
           </AreaChart>
         </ResponsiveContainer>
       </div>

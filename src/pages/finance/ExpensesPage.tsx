@@ -2,7 +2,6 @@ import { useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Modal } from '@/components/ui/Modal'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { FieldError, fieldInputClass } from '@/components/ui/FormField'
 import { formatCurrency, formatDate, generateId } from '@/lib/utils'
 import { toast } from '@/components/ui/Toaster'
@@ -66,7 +65,6 @@ export default function ExpensesPage() {
       <PageHeader
         title="Expenses"
         subtitle="Track branch operating expenses and generate profit/loss reports"
-        badge={<DemoBadge />}
         actions={<button className="btn-primary" onClick={() => setShowModal(true)}><Plus size={15} /> Add Expense</button>}
       />
 

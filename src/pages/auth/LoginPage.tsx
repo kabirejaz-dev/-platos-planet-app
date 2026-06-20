@@ -5,6 +5,19 @@ import type { UserRole, AuthUser } from '@/types'
 import { Eye, EyeOff, Loader2, Sparkles, Zap, Users, Globe, X } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { isValidEmail, EMAIL_ERROR } from '@/lib/validation'
+import { useCountUp } from '@/hooks/useCountUp'
+
+const ROLE_ICONS: Record<UserRole, string> = {
+  super_admin: '👑',
+  branch_admin: '🏢',
+  sales: '📈',
+  teacher: '👩‍🏫',
+  coordinator: '📊',
+  finance: '💰',
+  parent: '👪',
+  student: '🎓',
+  ai_tutor: '🤖',
+}
 
 const REMEMBERED_EMAIL_KEY = 'platos-planet-remembered-email'
 
@@ -59,6 +72,9 @@ export default function LoginPage() {
   const [emailError, setEmailError] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [showForgotPw, setShowForgotPw] = useState(false)
+  const [justFilled, setJustFilled] = useState(false)
+  const rolesCount = useCountUp(9)
+  const programmesCount = useCountUp(8)
 
   useEffect(() => {
     const remembered = localStorage.getItem(REMEMBERED_EMAIL_KEY)
@@ -97,6 +113,8 @@ export default function LoginPage() {
   const quickLogin = (account: typeof DEMO_ACCOUNTS[0]) => {
     setEmail(account.email)
     setPassword(account.password)
+    setJustFilled(true)
+    setTimeout(() => setJustFilled(false), 700)
   }
 
   return (
@@ -120,7 +138,7 @@ export default function LoginPage() {
           />
           {/* Glow orbs */}
           <div
-            className="absolute"
+            className="absolute animate-float"
             style={{
               top: '-15%', left: '-10%',
               width: 600, height: 600,
@@ -129,7 +147,7 @@ export default function LoginPage() {
             }}
           />
           <div
-            className="absolute"
+            className="absolute animate-float-slow"
             style={{
               bottom: '-20%', right: '-15%',
               width: 500, height: 500,
@@ -138,7 +156,7 @@ export default function LoginPage() {
             }}
           />
           <div
-            className="absolute"
+            className="absolute animate-float-slower"
             style={{
               top: '45%', left: '55%',
               width: 300, height: 300,
@@ -208,8 +226,8 @@ export default function LoginPage() {
           {/* Stats row */}
           <div className="grid grid-cols-3 gap-3 pt-2">
             {[
-              { value: '9', label: 'User Roles' },
-              { value: '8+', label: 'Programmes' },
+              { value: `${rolesCount}`, label: 'User Roles' },
+              { value: `${programmesCount}+`, label: 'Programmes' },
               { value: 'AI-First', label: 'Platform' },
             ].map((s) => (
               <div
@@ -293,6 +311,7 @@ export default function LoginPage() {
                 onBlur={() => setEmailError(email && !isValidEmail(email) ? EMAIL_ERROR : '')}
                 placeholder="your@email.com"
                 className={emailError ? 'plato-input border-[#FF6B7A]' : 'plato-input'}
+                style={justFilled ? { boxShadow: '0 0 0 2px rgba(0,255,163,0.5)', transition: 'box-shadow 0.4s ease' } : { transition: 'box-shadow 0.4s ease' }}
                 required
               />
               {emailError && <p className="text-[11px] text-[#FF6B7A] mt-1">{emailError}</p>}
@@ -309,6 +328,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className="plato-input pr-10"
+                  style={justFilled ? { boxShadow: '0 0 0 2px rgba(0,255,163,0.5)', transition: 'box-shadow 0.4s ease' } : { transition: 'box-shadow 0.4s ease' }}
                   required
                 />
                 <button
@@ -387,7 +407,7 @@ export default function LoginPage() {
                   <button
                     key={acc.role}
                     onClick={() => quickLogin(acc)}
-                    className="px-2 py-2 rounded-xl text-[11px] font-semibold text-center transition-all"
+                    className="px-2 py-2 rounded-xl text-[11px] font-semibold text-center transition-all flex flex-col items-center gap-1 min-h-[44px]"
                     style={{
                       background: isActive ? `${acc.color}15` : 'rgba(255,255,255,0.03)',
                       border: `1px solid ${isActive ? `${acc.color}40` : 'rgba(255,255,255,0.07)'}`,
@@ -395,6 +415,7 @@ export default function LoginPage() {
                       boxShadow: isActive ? `0 0 12px ${acc.color}20` : 'none',
                     }}
                   >
+                    <span className="text-[14px] leading-none">{ROLE_ICONS[acc.role]}</span>
                     {acc.label}
                   </button>
                 )

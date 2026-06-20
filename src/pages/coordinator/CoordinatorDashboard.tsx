@@ -1,12 +1,12 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { gradeFromPercentage, getGradeColor } from '@/lib/utils'
 import { Link } from 'react-router-dom'
 import { BookOpen, BarChart3, PenTool, ShieldCheck, ArrowRight } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { InsightsStrip, type Insight } from '@/components/ui/InsightsStrip'
 
 const SUBJECT_CODE: Record<string, string> = {
   Physics: 'Phy', Chemistry: 'Che', Biology: 'Bio', Mathematics: 'Mat', English: 'Eng',
@@ -15,7 +15,7 @@ const SUBJECT_CODE: Record<string, string> = {
 }
 
 export default function CoordinatorDashboard() {
-  const { assessments, batches, students, teachers, homework } = useAppStore()
+  const { assessments, batches, students, teachers, homework, interventions: interventionRecords, teacherReviews } = useAppStore()
 
   const completedAssessments = assessments.filter((a) => a.status === 'graded')
   const upcomingAssessments = assessments.filter((a) => a.status === 'upcoming')
@@ -48,15 +48,43 @@ export default function CoordinatorDashboard() {
     ? Math.round((homework.reduce((s, h) => s + h.submissions.length, 0) / (homework.reduce((s, h) => { const b = batches.find((b) => b.id === h.batchId); return s + (b?.studentIds.length || 0) }, 0) || 1)) * 100)
     : 0
 
+  const staleInterventions = interventionRecords.filter((i) => {
+    if (i.status === 'resolved') return false
+    const daysSinceStart = Math.floor((Date.now() - new Date(i.startDate).getTime()) / 86400000)
+    return daysSinceStart >= 5
+  })
+
+  const subjectAssessmentAvg = (a: typeof assessments[number]) => a.results.length > 0 ? a.results.reduce((s, r) => s + r.percentage, 0) / a.results.length : null
+  const subjectDrops = Object.keys(avgBySubject).map((subject) => {
+    const subjectGraded = completedAssessments.filter((a) => a.subject === subject).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    if (subjectGraded.length < 2) return null
+    const latest = subjectAssessmentAvg(subjectGraded[subjectGraded.length - 1])
+    const prev = subjectAssessmentAvg(subjectGraded[subjectGraded.length - 2])
+    if (latest === null || prev === null) return null
+    const drop = prev - latest
+    return drop > 0 ? { subject, drop: Math.round(drop) } : null
+  }).filter((x): x is { subject: string; drop: number } => x !== null)
+  const biggestDrop = subjectDrops.sort((a, b) => b.drop - a.drop)[0] || null
+
+  const reviewCountByTeacher = teachers.map((t) => ({ teacher: t, count: teacherReviews.filter((r) => r.teacherId === t.id).length }))
+  const unreviewedTeacher = reviewCountByTeacher.find((r) => r.count === 0)
+
+  const insights: Insight[] = []
+  if (staleInterventions.length > 0) insights.push({ icon: '🔴', text: <><strong>{staleInterventions.length}</strong> open intervention{staleInterventions.length === 1 ? '' : 's'} have no activity for 5+ days</> })
+  if (biggestDrop) insights.push({ icon: '📊', text: <><strong>{biggestDrop.subject}</strong> average score dropped {biggestDrop.drop}% vs the previous assessment</>, tone: 'purple' })
+  if (unreviewedTeacher) insights.push({ icon: '👩‍🏫', text: <><strong>{unreviewedTeacher.teacher.name}</strong> has 0 observations this term</> })
+
   return (
     <div className="space-y-6">
-      <PageHeader title="Academic Excellence Centre" subtitle="Monitor curriculum, assessments, and student performance" badge={<DemoBadge />} />
+      <PageHeader title="Academic Excellence Centre" subtitle="Monitor curriculum, assessments, and student performance" />
+
+      <InsightsStrip insights={insights} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Assessments Graded" value={completedAssessments.length} icon={<PenTool size={18} />} color="#7B61FF" demo={false} />
-        <StatCard label="Upcoming" value={upcomingAssessments.length} icon={<BookOpen size={18} />} color="#4D7CFF" demo={false} />
-        <StatCard label="HW Completion" value={`${homeworkCompletionRate}%`} icon={<BarChart3 size={18} />} color="#00FFA3" demo={false} />
-        <StatCard label="Students at Risk" value={interventions.length} icon={<ShieldCheck size={18} />} color="#FF6B7A" demo={false} />
+        <StatCard label="Assessments Graded" value={completedAssessments.length} icon={<PenTool size={18} />} color="#7B61FF" />
+        <StatCard label="Upcoming" value={upcomingAssessments.length} icon={<BookOpen size={18} />} color="#4D7CFF" />
+        <StatCard label="HW Completion" value={`${homeworkCompletionRate}%`} icon={<BarChart3 size={18} />} color="#00FFA3" />
+        <StatCard label="Students at Risk" value={interventions.length} icon={<ShieldCheck size={18} />} color="#FF6B7A" />
       </div>
 
       {/* Subject performance */}
@@ -64,7 +92,6 @@ export default function CoordinatorDashboard() {
         <div className="plato-card p-5">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-sm font-semibold text-foreground">Average Score by Subject</h3>
-            <DemoBadge />
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={subjectData}>
@@ -76,7 +103,7 @@ export default function CoordinatorDashboard() {
                 formatter={(v: number) => [`${v}%`, 'Average']}
                 labelFormatter={(label: string) => subjectData.find((d) => d.subject === label)?.fullName || label}
               />
-              <Bar dataKey="avg" fill="#7B61FF" radius={[6, 6, 0, 0]} />
+              <Bar animationDuration={600} dataKey="avg" fill="#7B61FF" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

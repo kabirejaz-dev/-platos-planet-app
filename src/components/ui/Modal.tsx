@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface ModalProps {
   open: boolean
@@ -63,48 +64,59 @@ export function Modal({ open, onClose, title, children, size = 'md', isDirty = f
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  if (!open) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={requestClose} />
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className={`relative w-full ${sizeMap[size]} bg-dark-card border border-dark-border rounded-2xl shadow-card max-h-[90vh] flex flex-col`}
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-dark-border flex-shrink-0">
-          <h2 id={titleId} className="text-lg font-semibold text-foreground font-display">{title}</h2>
-          <button
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <motion.div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={requestClose}
-            aria-label="Close"
-            className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+          <motion.div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            className={`relative w-full ${sizeMap[size]} bg-dark-card border border-dark-border rounded-t-2xl sm:rounded-2xl shadow-card max-h-[92vh] sm:max-h-[90vh] flex flex-col`}
+            initial={{ opacity: 0, y: 24, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.97 }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
           >
-            <X size={16} />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
-
-        {confirmClose && (
-          <>
-            <div className="absolute inset-0 z-10 bg-black/60 flex items-center justify-center p-4" onClick={() => setConfirmClose(false)}>
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-sm rounded-2xl p-5 space-y-4"
-                style={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.1)' }}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-dark-border flex-shrink-0">
+              <h2 id={titleId} className="text-lg font-semibold text-foreground font-display">{title}</h2>
+              <button
+                onClick={requestClose}
+                aria-label="Close"
+                className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               >
-                <p className="text-[13px] text-white/80">You have unsaved changes. Close anyway?</p>
-                <div className="flex justify-end gap-2">
-                  <button className="btn-ghost border border-dark-border text-sm" onClick={() => setConfirmClose(false)}>Keep editing</button>
-                  <button className="btn-primary text-sm" style={{ background: '#FF6B7A' }} onClick={onClose}>Close anyway</button>
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+
+            {confirmClose && (
+              <div className="absolute inset-0 z-10 bg-black/60 flex items-center justify-center p-4" onClick={() => setConfirmClose(false)}>
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full max-w-sm rounded-2xl p-5 space-y-4"
+                  style={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.1)' }}
+                >
+                  <p className="text-[13px] text-white/80">You have unsaved changes. Close anyway?</p>
+                  <div className="flex justify-end gap-2">
+                    <button className="btn-ghost border border-dark-border text-sm" onClick={() => setConfirmClose(false)}>Keep editing</button>
+                    <button className="btn-primary text-sm" style={{ background: '#FF6B7A' }} onClick={onClose}>Close anyway</button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+            )}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   )
 }

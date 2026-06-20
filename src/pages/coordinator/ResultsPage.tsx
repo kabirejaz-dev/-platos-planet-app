@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Modal } from '@/components/ui/Modal'
 import { formatDate, gradeFromPercentage, getGradeColor } from '@/lib/utils'
@@ -77,7 +76,6 @@ export default function ResultsPage() {
       <PageHeader
         title="Results"
         subtitle={`${filtered.length} graded assessments`}
-        badge={<DemoBadge />}
         actions={
           <select className="plato-input text-[13px]" value={selectedBatch} onChange={(e) => setSelectedBatch(e.target.value)}>
             <option value="all">All Batches</option>
@@ -95,7 +93,7 @@ export default function ResultsPage() {
               <XAxis dataKey="grade" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 12 }} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-              <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+              <Bar animationDuration={600} dataKey="count" radius={[6, 6, 0, 0]}>
                 {gradeChartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
               </Bar>
             </BarChart>
@@ -128,7 +126,8 @@ export default function ResultsPage() {
         <div className="p-4 border-b border-white/5">
           <h3 className="text-[13px] font-semibold text-white/70">All Graded Assessments</h3>
         </div>
-        <table className="w-full plato-table">
+        <div className="overflow-x-auto">
+          <table className="w-full plato-table">
           <thead><tr><th>Assessment</th><th>Subject</th><th>Date</th><th>Submissions</th><th>Avg Score</th><th>Top Grade</th><th>Actions</th></tr></thead>
           <tbody>
             {filtered.slice(0, 15).map((a) => {
@@ -154,6 +153,7 @@ export default function ResultsPage() {
             })}
           </tbody>
         </table>
+        </div>
         {filtered.length === 0 && (
           <div className="text-center py-12 text-white/30">
             <Award size={28} className="mx-auto mb-2 opacity-30" />

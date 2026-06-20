@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { toast } from '@/components/ui/Toaster'
 import { Receipt, FileCheck, Download, AlertTriangle } from 'lucide-react'
@@ -50,7 +49,6 @@ export default function VATReportsPage() {
       <PageHeader
         title="VAT Reports"
         subtitle="UAE VAT-compliant reports ready for submission to the FTA"
-        badge={<DemoBadge />}
         actions={
           <div className="flex items-center gap-2">
             <select className="plato-input text-sm" value={periodKey} onChange={(e) => setPeriodKey(e.target.value)}>
@@ -96,7 +94,8 @@ export default function VATReportsPage() {
         <div className="p-4 border-b border-white/5">
           <h3 className="text-[13px] font-semibold text-white/70">Taxable Supplies (Paid Invoices) — {period.label}</h3>
         </div>
-        <table className="w-full plato-table">
+        <div className="overflow-x-auto">
+          <table className="w-full plato-table">
           <thead><tr><th>Invoice #</th><th>Date</th><th>Gross Amount</th><th>VAT ({settings.vatRate}%)</th><th>Net Amount</th></tr></thead>
           <tbody>
             {paidInvoices.map((inv) => {
@@ -113,6 +112,7 @@ export default function VATReportsPage() {
             })}
           </tbody>
         </table>
+        </div>
         {paidInvoices.length === 0 && (
           <div className="text-center py-12 text-white/30">
             <Receipt size={28} className="mx-auto mb-2 opacity-30" />

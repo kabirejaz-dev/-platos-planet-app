@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { formatDate } from '@/lib/utils'
 import { FileText, Presentation, Video, Link2, File, BookOpen } from 'lucide-react'
@@ -27,7 +26,7 @@ export default function ResourcesPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Resources" subtitle="Past papers, notes, and learning materials uploaded by your teachers" badge={<DemoBadge />} />
+      <PageHeader title="Resources" subtitle="Past papers, notes, and learning materials uploaded by your teachers" />
 
       <div className="flex gap-1 p-1 rounded-xl w-fit flex-wrap" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
         {['all', ...subjects].map((s) => (

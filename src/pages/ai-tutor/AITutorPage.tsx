@@ -413,6 +413,7 @@ export default function AITutorPage() {
                   <button
                     onClick={sendMessage}
                     disabled={!input.trim() || isTyping}
+                    aria-label="Send message"
                     className="w-10 h-10 rounded-xl bg-[#7B61FF] text-white flex items-center justify-center hover:bg-[#7B61FF]/90 transition-colors disabled:opacity-50 flex-shrink-0"
                   >
                     <Send size={16} />

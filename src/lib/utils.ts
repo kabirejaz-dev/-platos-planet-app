@@ -143,6 +143,34 @@ export function daysUntil(date: string): number {
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }
 
+const DAY_INDEX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
+
+// Finds the nearest upcoming schedule slot across a set of batches (e.g. a
+// teacher's classes or a parent's child's classes), counting today's
+// not-yet-started slots before rolling into future days.
+export function getNextClassSlot<T extends { schedule: { day: string; startTime: string; endTime: string }[] }>(
+  items: T[],
+  now: Date = new Date()
+): { item: T; day: string; startTime: string; endTime: string; daysUntil: number } | null {
+  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+  let best: { item: T; day: string; startTime: string; endTime: string; daysUntil: number } | null = null
+
+  for (const item of items) {
+    for (const slot of item.schedule) {
+      const slotDayIdx = DAY_INDEX[slot.day]
+      if (slotDayIdx === undefined) continue
+      let daysAhead = (slotDayIdx - now.getDay() + 7) % 7
+      const [h, m] = slot.startTime.split(':').map(Number)
+      const slotMinutes = h * 60 + (m || 0)
+      if (daysAhead === 0 && slotMinutes <= nowMinutes) daysAhead = 7
+      if (!best || daysAhead < best.daysUntil) {
+        best = { item, day: slot.day, startTime: slot.startTime, endTime: slot.endTime, daysUntil: daysAhead }
+      }
+    }
+  }
+  return best
+}
+
 // Last n calendar months ending at ref (oldest first), so charts always span
 // a real rolling window instead of only the months that happen to have data.
 export function getLastNMonths(n: number, ref: Date = new Date()): { key: string; label: string }[] {

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Modal } from '@/components/ui/Modal'
 import { RequiredMark, RequiredFieldsNote } from '@/components/ui/FormField'
 import { formatDate } from '@/lib/utils'
@@ -174,11 +173,10 @@ export default function FollowUpsPage() {
       <PageHeader
         title="Follow-Ups"
         subtitle={`${overdue.length + today.length} need attention today`}
-        badge={<DemoBadge />}
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Overdue', value: overdue.length, color: '#FF6B7A' },
           { label: 'Today', value: today.length, color: '#FBBF24' },

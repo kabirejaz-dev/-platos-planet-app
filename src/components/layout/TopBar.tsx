@@ -1,4 +1,4 @@
-import { Bell, Search, Menu, Command } from 'lucide-react'
+import { Bell, Search, Menu, Command, HelpCircle } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import { Avatar } from '@/components/ui/Avatar'
 import { useState, useEffect } from 'react'
@@ -8,6 +8,7 @@ import { CommandPalette } from '@/components/ui/CommandPalette'
 
 interface TopBarProps {
   onToggleSidebar: () => void
+  onShowTour: () => void
 }
 
 const typeColor: Record<string, string> = {
@@ -17,7 +18,7 @@ const typeColor: Record<string, string> = {
   info: '#4D7CFF',
 }
 
-export function TopBar({ onToggleSidebar }: TopBarProps) {
+export function TopBar({ onToggleSidebar, onShowTour }: TopBarProps) {
   const { currentUser, notifications, markNotificationRead, markAllNotificationsRead } = useAppStore()
   const navigate = useNavigate()
   const [showNotifs, setShowNotifs] = useState(false)
@@ -58,7 +59,7 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
         <button
           onClick={onToggleSidebar}
           aria-label="Toggle sidebar"
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/5 transition-all"
+          className="hidden md:flex w-8 h-8 rounded-lg items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/5 transition-all"
         >
           <Menu size={16} />
         </button>
@@ -87,6 +88,16 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
 
       {/* Right */}
       <div className="flex items-center gap-2">
+        {/* Replay onboarding tour */}
+        <button
+          onClick={onShowTour}
+          aria-label="Replay onboarding tour"
+          title="Replay onboarding tour"
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/5 transition-all"
+        >
+          <HelpCircle size={16} />
+        </button>
+
         {/* Notification bell */}
         <div className="relative">
           <button

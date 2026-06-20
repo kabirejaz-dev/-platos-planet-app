@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Megaphone, Users, Target, TrendingUp } from 'lucide-react'
 
@@ -21,7 +20,7 @@ export default function CampaignsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Campaigns" subtitle="Marketing campaigns, referral programmes, and lead generation tracking" badge={<DemoBadge />} />
+      <PageHeader title="Campaigns" subtitle="Marketing campaigns, referral programmes, and lead generation tracking" />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="plato-card p-4 text-center">
@@ -63,7 +62,7 @@ export default function CampaignsPage() {
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize" style={{ background: `${CAMPAIGN_STATUS_COLOR[c.status]}15`, color: CAMPAIGN_STATUS_COLOR[c.status] }}>{c.status}</span>
               </div>
-              <div className="grid grid-cols-4 gap-3 mt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                 <div>
                   <p className="text-[16px] font-bold text-white/85">{formatCurrency(c.budget)}</p>
                   <p className="text-[10px] text-white/30">Budget</p>

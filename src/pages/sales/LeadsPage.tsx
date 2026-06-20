@@ -3,11 +3,10 @@ import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { FieldError, fieldInputClass } from '@/components/ui/FormField'
 import { generateId, formatDate, getStatusColor } from '@/lib/utils'
 import { leadSchema, getFieldErrors } from '@/lib/schemas'
-import { Plus, Search, Phone, Mail, ChevronRight, LayoutGrid, List, Calendar, CalendarPlus } from 'lucide-react'
+import { Plus, Search, Phone, Mail, ChevronRight, LayoutGrid, List, Calendar, CalendarPlus, MessageCircle, Clock } from 'lucide-react'
 import type { LeadStatus, Curriculum, Subject, Lead } from '@/types'
 import { toast } from '@/components/ui/Toaster'
 
@@ -68,17 +67,29 @@ const STAGE_CONFIG: Record<LeadStatus, { label: string; color: string; bg: strin
   lost:             { label: 'Lost',             color: '#FF6B7A', bg: 'rgba(255,107,122,0.08)' },
 }
 
-function KanbanCard({ lead, onClick, onScheduleTrial }: { lead: Lead; onClick: () => void; onScheduleTrial: () => void }) {
+function KanbanCard({ lead, onClick, onScheduleTrial, draggable, onDragStart, onDragEnd }: { lead: Lead; onClick: () => void; onScheduleTrial: () => void; draggable?: boolean; onDragStart?: () => void; onDragEnd?: () => void }) {
+  const settings = useAppStore((s) => s.settings)
   const cfg = STAGE_CONFIG[lead.status]
   const priority = getLeadPriority(lead)
   const pc = PRIORITY_CONFIG[priority]
   const canScheduleTrial = ['contacted', 'trial_scheduled', 'trial_done'].includes(lead.status)
+  const hasPhone = Boolean(lead.parentPhone?.trim())
+  const whatsappMessage = `Hello ${lead.parentName}, thank you for your interest in ${settings.companyName}. We'd love to arrange a free trial class for your child. Please let us know a convenient time.`
+
+  const daysSinceAdded = Math.floor((Date.now() - new Date(lead.createdAt).getTime()) / 86400000)
+  const isStale = !['enrolled', 'lost'].includes(lead.status) && Math.floor((Date.now() - new Date(lead.followUpDate || lead.createdAt).getTime()) / 86400000) >= 7
+  const followUpToday = lead.followUpDate === new Date().toISOString().split('T')[0]
+  const borderColor = isStale ? '#FF6B7A' : cfg.color
+
   return (
     <div
       onClick={onClick}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
       className="plato-card p-3.5 cursor-pointer group"
-      style={{ borderLeft: `3px solid ${cfg.color}` }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = cfg.color; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+      style={{ borderLeft: `3px solid ${borderColor}` }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = borderColor; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
       onMouseLeave={(e) => { e.currentTarget.style.background = '' }}
     >
       <div className="flex items-center gap-2 mb-2">
@@ -97,21 +108,48 @@ function KanbanCard({ lead, onClick, onScheduleTrial }: { lead: Lead; onClick: (
         <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{ background: 'rgba(77,124,255,0.15)', color: '#4D7CFF' }}>{lead.curriculum}</span>
         <span className="px-1.5 py-0.5 rounded text-[10px] text-white/40">{lead.grade}</span>
       </div>
-      {lead.followUpDate && (
+      <div className="flex items-center gap-2 text-[10px] mb-2" style={{ color: isStale ? '#FF6B7A' : 'rgba(255,255,255,0.3)' }}>
+        <span className="flex items-center gap-1"><Clock size={10} /> {daysSinceAdded === 0 ? 'Today' : `${daysSinceAdded}d ago`}</span>
+        {followUpToday && <span className="flex items-center gap-1" style={{ color: '#FBBF24' }}><Phone size={10} /> Follow-up due today</span>}
+      </div>
+      {lead.followUpDate && !followUpToday && (
         <div className="flex items-center gap-1 text-[10px] text-white/30 mb-2">
           <Calendar size={10} />
           {formatDate(lead.followUpDate)}
         </div>
       )}
-      {canScheduleTrial && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onScheduleTrial() }}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors"
-          style={{ background: 'rgba(198,255,0,0.1)', color: '#C6FF00' }}
-        >
-          <CalendarPlus size={12} /> Schedule Trial →
-        </button>
-      )}
+      <div className="flex items-center gap-1.5">
+        {canScheduleTrial && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onScheduleTrial() }}
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors min-h-[28px]"
+            style={{ background: 'rgba(198,255,0,0.1)', color: '#C6FF00' }}
+          >
+            <CalendarPlus size={12} /> Schedule Trial →
+          </button>
+        )}
+        {hasPhone ? (
+          <a
+            href={`https://wa.me/${lead.parentPhone.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMessage)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Send WhatsApp message"
+            className="flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0 transition-colors"
+            style={{ background: 'rgba(0,255,163,0.1)', color: '#00FFA3' }}
+          >
+            <MessageCircle size={13} />
+          </a>
+        ) : (
+          <span
+            title="No WhatsApp number on file"
+            className="flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0 opacity-30"
+            style={{ background: 'rgba(255,255,255,0.05)' }}
+          >
+            <MessageCircle size={13} />
+          </span>
+        )}
+      </div>
     </div>
   )
 }
@@ -124,6 +162,8 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'list' | 'board'>('board')
   const [trialLeadId, setTrialLeadId] = useState<string | null>(null)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [dragOverStatus, setDragOverStatus] = useState<LeadStatus | null>(null)
   const [trialForm, setTrialForm] = useState({ branchId: '', date: '', timeSlot: TIME_SLOTS[0], teacherId: '' })
   const [form, setForm] = useState({
     parentName: '', parentEmail: '', parentPhone: '',
@@ -191,6 +231,16 @@ export default function LeadsPage() {
   const activeBranches = branches.filter((b) => b.isActive)
   const matchingTeachers = trialLead ? teachers.filter((t) => t.curriculums.includes(trialLead.curriculum)) : []
 
+  const handleDrop = (status: LeadStatus) => {
+    setDragOverStatus(null)
+    if (!draggingId) return
+    const lead = leads.find((l) => l.id === draggingId)
+    setDraggingId(null)
+    if (!lead || lead.status === status) return
+    updateLead(lead.id, { status })
+    toast.success(`${lead.studentName} moved to ${STAGE_CONFIG[status].label}`)
+  }
+
   const openTrialModal = (lead: Lead) => {
     setTrialLeadId(lead.id)
     setTrialForm({
@@ -218,7 +268,6 @@ export default function LeadsPage() {
       <PageHeader
         title="Leads Pipeline"
         subtitle={`${leads.length} total · ${leads.filter((l) => l.status === 'new').length} new · ${leads.filter((l) => l.status === 'enrolled').length} enrolled`}
-        badge={<DemoBadge />}
         actions={
           <div className="flex items-center gap-2">
             <div className="flex rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)' }}>
@@ -299,51 +348,98 @@ export default function LeadsPage() {
           </div>
         </div>
       ) : viewMode === 'board' ? (
-        // Kanban board
-        <div className="overflow-x-auto pb-4 -mx-4 px-4">
-          <div className="flex gap-3 min-w-max">
-            {STATUSES.map((status) => {
-              const colLeads = leads.filter((l) => l.status === status)
-              const cfg = STAGE_CONFIG[status]
-              return (
-                <div key={status} className="flex-shrink-0 w-60">
-                  {/* Column header */}
+        <>
+          {/* Kanban board */}
+          <div className="overflow-x-auto pb-4 -mx-4 px-4">
+            <div className="flex gap-3 min-w-max">
+              {STATUSES.map((status) => {
+                const colLeads = leads.filter((l) => l.status === status)
+                const cfg = STAGE_CONFIG[status]
+                const isDragOver = dragOverStatus === status
+                return (
                   <div
-                    className="flex items-center justify-between px-3 py-2 rounded-xl mb-2"
-                    style={{ background: cfg.bg, border: `1px solid ${cfg.color}20` }}
+                    key={status}
+                    className="flex-shrink-0 w-60"
+                    onDragOver={(e) => { e.preventDefault(); if (dragOverStatus !== status) setDragOverStatus(status) }}
+                    onDragLeave={() => setDragOverStatus((s) => (s === status ? null : s))}
+                    onDrop={() => handleDrop(status)}
                   >
-                    <span className="text-[12px] font-bold" style={{ color: cfg.color }}>{cfg.label}</span>
-                    <span
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
-                      style={{ background: `${cfg.color}25`, color: cfg.color }}
+                    {/* Column header */}
+                    <div
+                      className="flex items-center justify-between px-3 py-2 rounded-xl mb-2"
+                      style={{ background: cfg.bg, border: `1px solid ${cfg.color}20` }}
                     >
-                      {colLeads.length}
-                    </span>
-                  </div>
-                  {/* Cards */}
-                  <div className="space-y-2">
-                    {colLeads.map((lead) => (
-                      <KanbanCard
-                        key={lead.id}
-                        lead={lead}
-                        onClick={() => setSelectedLead(lead.id)}
-                        onScheduleTrial={() => openTrialModal(lead)}
-                      />
-                    ))}
-                    {colLeads.length === 0 && (
-                      <div
-                        className="rounded-xl p-4 text-center text-[11px]"
-                        style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.2)' }}
+                      <span className="text-[12px] font-bold" style={{ color: cfg.color }}>{cfg.label}</span>
+                      <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+                        style={{ background: `${cfg.color}25`, color: cfg.color }}
                       >
-                        No leads
-                      </div>
-                    )}
+                        {colLeads.length}
+                      </span>
+                    </div>
+                    {/* Cards */}
+                    <div
+                      className="space-y-2 rounded-xl transition-all"
+                      style={isDragOver ? { border: '2px dashed #7B61FF', background: 'rgba(123,97,255,0.06)', padding: 4, minHeight: 60 } : { padding: 4, minHeight: 60 }}
+                    >
+                      {colLeads.map((lead) => (
+                        <KanbanCard
+                          key={lead.id}
+                          lead={lead}
+                          onClick={() => setSelectedLead(lead.id)}
+                          onScheduleTrial={() => openTrialModal(lead)}
+                          draggable
+                          onDragStart={() => setDraggingId(lead.id)}
+                          onDragEnd={() => { setDraggingId(null); setDragOverStatus(null) }}
+                        />
+                      ))}
+                      {colLeads.length === 0 && !isDragOver && (
+                        <div
+                          className="rounded-xl p-4 text-center text-[11px]"
+                          style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.2)' }}
+                        >
+                          No leads
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
-        </div>
+
+          {/* Conversion funnel */}
+          {(() => {
+            const enquiryCount = leads.length
+            const trialCount = leads.filter((l) => ['trial_scheduled', 'trial_done', 'enrolled'].includes(l.status)).length
+            const enrolledCount = leads.filter((l) => l.status === 'enrolled').length
+            const conversion = enquiryCount > 0 ? Math.round((enrolledCount / enquiryCount) * 100) : 0
+            const funnelSteps = [
+              { label: 'Enquiry', count: enquiryCount, color: '#4D7CFF' },
+              { label: 'Trial', count: trialCount, color: '#FBBF24' },
+              { label: 'Enrolled', count: enrolledCount, color: '#00FFA3' },
+            ]
+            return (
+              <div className="plato-card p-4 flex items-center gap-4 flex-wrap">
+                <span className="text-[12px] font-semibold text-white/40 uppercase tracking-widest">Conversion Funnel</span>
+                <div className="flex items-center gap-2 flex-1 min-w-[260px]">
+                  {funnelSteps.map((s, i) => (
+                    <div key={s.label} className="flex items-center gap-2">
+                      {i > 0 && <ChevronRight size={14} className="text-white/20" />}
+                      <div className="text-center">
+                        <p className="text-[14px] font-bold" style={{ color: s.color }}>{s.count}</p>
+                        <p className="text-[10px] text-white/35">{s.label}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <span className="text-[12px] font-bold px-3 py-1.5 rounded-full" style={{ background: 'rgba(0,255,163,0.1)', color: '#00FFA3' }}>
+                  Conversion: {conversion}%
+                </span>
+              </div>
+            )
+          })()}
+        </>
       ) : (
         // List view
         <>

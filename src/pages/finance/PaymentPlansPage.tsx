@@ -1,7 +1,6 @@
 import { Fragment, useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -119,7 +118,6 @@ export default function PaymentPlansPage() {
       <PageHeader
         title="Payment Plans"
         subtitle="Instalment plans for families who need to spread fee payments"
-        badge={<DemoBadge />}
         actions={
           <button className="btn-primary" onClick={() => setShowModal(true)}>
             <Plus size={15} /> Create Plan
@@ -131,7 +129,8 @@ export default function PaymentPlansPage() {
         <EmptyState icon={<CalendarRange size={24} />} title="No payment plans yet" description="Click '+ Create Plan' to set one up." />
       ) : (
         <div className="plato-card overflow-hidden">
-          <table className="plato-table">
+          <div className="overflow-x-auto">
+            <table className="plato-table">
             <thead>
               <tr>
                 <th>Student</th><th>Programme</th><th>Total Fee</th><th>Plan</th><th>Per Instalment</th><th>Progress</th><th>Status</th><th></th>
@@ -205,6 +204,7 @@ export default function PaymentPlansPage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

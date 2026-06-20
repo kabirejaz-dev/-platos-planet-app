@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Avatar } from '@/components/ui/Avatar'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
@@ -78,7 +77,7 @@ export default function StudentProgressPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Student Progress" subtitle="Track each student's academic journey" badge={<DemoBadge />} />
+      <PageHeader title="Student Progress" subtitle="Track each student's academic journey" />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         {/* Student list */}
@@ -167,7 +166,7 @@ export default function StudentProgressPage() {
                       contentStyle={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, fontSize: 12 }}
                       formatter={(v: number) => [`${v}%`, 'Score']}
                     />
-                    <Bar dataKey="score" fill="#4D7CFF" radius={[4, 4, 0, 0]} />
+                    <Bar animationDuration={600} dataKey="score" fill="#4D7CFF" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

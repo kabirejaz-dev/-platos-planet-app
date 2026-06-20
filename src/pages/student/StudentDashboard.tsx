@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { useAppStore } from '@/store/appStore'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
+import { StreakPopup } from '@/components/ui/StreakPopup'
 import { formatDate, getPlanetEmoji, getGradeColor, gradeFromPercentage, calculateAttendanceRate } from '@/lib/utils'
 import { Link } from 'react-router-dom'
 import { Brain, Target, BookOpen, Award, ArrowRight, Zap, Flame, Trophy } from 'lucide-react'
@@ -15,6 +17,19 @@ export default function StudentDashboard() {
   const { currentUser, students, homework, assessments, attendance, achievements } = useAppStore()
 
   const student = students.find((s) => s.userId === currentUser?.id)
+  const [showStreakPopup, setShowStreakPopup] = useState(false)
+
+  useEffect(() => {
+    if (!student || student.streak <= 0) return
+    const key = `pp_streak_seen_${student.id}`
+    const today = new Date().toISOString().split('T')[0]
+    if (localStorage.getItem(key) !== today) {
+      localStorage.setItem(key, today)
+      setShowStreakPopup(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [student?.id])
+
   if (!student) return <div className="text-muted-foreground p-4">Student profile not found.</div>
 
   const myAtt = attendance.filter((a) => a.studentId === student.id)
@@ -71,7 +86,7 @@ export default function StudentDashboard() {
             </div>
             {nextPlanet && <span className="text-muted-foreground">Next: {nextPlanet} ({nextPlanetXP.toLocaleString()} XP)</span>}
           </div>
-          <div className="w-full h-3 bg-dark-border rounded-full overflow-hidden">
+          <div className={`w-full h-3 bg-dark-border rounded-full overflow-hidden ${nextPlanet && xpProgress >= 90 ? 'animate-amber-pulse' : ''}`}>
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{ width: `${xpProgress}%`, background: `linear-gradient(90deg, ${PLANET_COLORS[student.planet]}, ${PLANET_COLORS[nextPlanet || student.planet]})` }}
@@ -81,8 +96,13 @@ export default function StudentDashboard() {
             <span>{student.planet}</span>
             {nextPlanet && <span>{nextPlanet}</span>}
           </div>
+          {nextPlanet && xpProgress >= 90 && (
+            <p className="text-xs text-amber-400 font-medium mt-1.5">Almost there! {(nextPlanetXP - student.xp).toLocaleString()} XP to {nextPlanet} 🪐</p>
+          )}
         </div>
       </div>
+
+      <StreakPopup streak={student.streak} open={showStreakPopup} onClose={() => setShowStreakPopup(false)} />
 
       {/* AI Coach */}
       <div className="plato-card p-5 bg-gradient-to-br from-[#7B61FF]/10 to-[#00F0FF]/5 border-[#7B61FF]/20">
@@ -90,7 +110,6 @@ export default function StudentDashboard() {
           <Brain size={18} className="text-[#7B61FF]" />
           <h3 className="text-sm font-semibold text-foreground">AI Coach</h3>
           <span className="badge-purple">Powered by Claude</span>
-          <DemoBadge />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="p-3 rounded-xl bg-white/5 border border-white/10">
@@ -171,10 +190,18 @@ export default function StudentDashboard() {
             <p className="text-sm text-muted-foreground text-center py-8">No results yet.</p>
           ) : (
             <div className="space-y-3">
-              {myAssessments.slice(0, 4).map((a) => {
+              {myAssessments.slice(0, 4).map((a, idx) => {
                 const result = a.results.find((r) => r.studentId === student.id)
+                const isTopGrade = result?.grade === 'A' || result?.grade === 'A*'
                 return (
-                  <div key={a.id} className="flex items-center gap-3">
+                  <motion.div
+                    key={a.id}
+                    className="flex items-center gap-3 p-2 rounded-xl"
+                    style={isTopGrade ? { animation: 'sparkle-border 1s ease-in-out 2' } : undefined}
+                    initial={{ opacity: 0, x: 12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.05, duration: 0.25 }}
+                  >
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${getGradeColor(result?.grade || 'U')} bg-white/5`}>
                       {result?.grade}
                     </div>
@@ -186,7 +213,7 @@ export default function StudentDashboard() {
                       <p className="text-sm font-bold text-foreground">{result?.marks}/{a.maxMarks}</p>
                       <p className="text-xs text-muted-foreground">{result?.percentage}%</p>
                     </div>
-                  </div>
+                  </motion.div>
                 )
               })}
             </div>

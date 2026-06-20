@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { formatDate, getStatusColor } from '@/lib/utils'
 import { toast } from '@/components/ui/Toaster'
@@ -42,7 +41,7 @@ export default function RequestsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Requests" subtitle={`${pendingCount} pending · parent requests, leave applications, and room bookings`} badge={<DemoBadge />} />
+      <PageHeader title="Requests" subtitle={`${pendingCount} pending · parent requests, leave applications, and room bookings`} />
 
       <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
         {(['pending', 'all'] as const).map((f) => (

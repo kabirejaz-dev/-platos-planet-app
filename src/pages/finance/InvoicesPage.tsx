@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
 import { Plus, Eye } from 'lucide-react'
@@ -20,7 +19,6 @@ export default function InvoicesPage() {
       <PageHeader
         title="Invoices"
         subtitle={`${invoices.length} total · ${invoices.filter((i) => i.status === 'paid').length} paid`}
-        badge={<DemoBadge />}
         actions={
           <button className="btn-primary" onClick={() => setShowCreate(true)}>
             <Plus size={16} /> Create Invoice

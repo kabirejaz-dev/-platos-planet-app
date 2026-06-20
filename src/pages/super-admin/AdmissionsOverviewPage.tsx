@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { StatCard } from '@/components/ui/StatCard'
 import { formatDate, getStatusColor } from '@/lib/utils'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
@@ -44,7 +43,6 @@ export default function AdmissionsOverviewPage() {
       <PageHeader
         title="Admissions Overview"
         subtitle="Consolidated view of all leads and enrolments across branches"
-        badge={<DemoBadge />}
         actions={
           <button className="btn-primary" onClick={() => setShowNewEnquiry(true)}>
             <Plus size={16} /> New Enquiry
@@ -67,8 +65,8 @@ export default function AdmissionsOverviewPage() {
               <XAxis dataKey="branch" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 12 }} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-              <Bar dataKey="total" name="Total Leads" fill="#4D7CFF" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="enrolled" name="Enrolled" fill="#00FFA3" radius={[6, 6, 0, 0]} />
+              <Bar animationDuration={600} dataKey="total" name="Total Leads" fill="#4D7CFF" radius={[6, 6, 0, 0]} />
+              <Bar animationDuration={600} dataKey="enrolled" name="Enrolled" fill="#00FFA3" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -80,7 +78,7 @@ export default function AdmissionsOverviewPage() {
               <XAxis dataKey="status" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 12 }} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-              <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+              <Bar animationDuration={600} dataKey="count" radius={[6, 6, 0, 0]}>
                 {statusChartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
               </Bar>
             </BarChart>
@@ -92,7 +90,8 @@ export default function AdmissionsOverviewPage() {
         <div className="p-4 border-b border-white/5">
           <h3 className="text-[13px] font-semibold text-white/70">Recent Leads</h3>
         </div>
-        <table className="w-full plato-table">
+        <div className="overflow-x-auto">
+          <table className="w-full plato-table">
           <thead><tr><th>Student</th><th>Branch</th><th>Curriculum</th><th>Source</th><th>Status</th><th>Created</th></tr></thead>
           <tbody>
             {recent.map((l) => {
@@ -110,6 +109,7 @@ export default function AdmissionsOverviewPage() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       <NewEnquiryModal open={showNewEnquiry} onClose={() => setShowNewEnquiry(false)} />

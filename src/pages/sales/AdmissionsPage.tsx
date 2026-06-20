@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatDate } from '@/lib/utils'
 import { CheckCircle2, Circle, GraduationCap, BookOpen, CreditCard, Smartphone, Search } from 'lucide-react'
@@ -57,11 +56,10 @@ export default function AdmissionsPage() {
       <PageHeader
         title="Admissions"
         subtitle={`${stats.total} enrolled · ${stats.complete} fully onboarded`}
-        badge={<DemoBadge />}
       />
 
       {/* KPI strip */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Total Enrolled', value: stats.total, color: '#4D7CFF' },
           { label: 'This Month', value: stats.thisMonth, color: '#7B61FF' },

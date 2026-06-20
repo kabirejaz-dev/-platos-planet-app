@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { formatDateTime } from '@/lib/utils'
 import { ShieldAlert, AlertTriangle, Info, History } from 'lucide-react'
@@ -29,7 +28,7 @@ export default function AuditLogsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Audit Logs" subtitle="Full audit trail of all user actions, data changes, and system events" badge={<DemoBadge />} />
+      <PageHeader title="Audit Logs" subtitle="Full audit trail of all user actions, data changes, and system events" />
 
       <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
         {(['all', 'critical', 'warning', 'info'] as const).map((f) => (

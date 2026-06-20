@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Modal } from '@/components/ui/Modal'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
@@ -68,7 +67,6 @@ export default function InterventionsPage() {
       <PageHeader
         title="Interventions"
         subtitle="Targeted academic intervention plans for at-risk students"
-        badge={<DemoBadge />}
         actions={<button className="btn-primary" onClick={() => setShowModal(true)}><Plus size={15} /> New Intervention</button>}
       />
 

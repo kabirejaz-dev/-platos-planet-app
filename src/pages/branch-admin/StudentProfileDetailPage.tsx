@@ -1,7 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { Avatar } from '@/components/ui/Avatar'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { formatDate, formatCurrency, getGradeColor, getStatusColor } from '@/lib/utils'
 import { ArrowLeft, MapPin, Clock } from 'lucide-react'
@@ -52,7 +51,6 @@ export default function StudentProfileDetailPage() {
       <PageHeader
         title={student.name}
         subtitle={`${student.curriculum} · ${student.grade}`}
-        badge={<DemoBadge />}
       />
 
       <div className="plato-card p-5 flex items-center gap-4">

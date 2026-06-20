@@ -1,7 +1,6 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { calculateAttendanceRate } from '@/lib/utils'
 import { Link } from 'react-router-dom'
@@ -38,7 +37,6 @@ export default function BranchAdminDashboard() {
       <PageHeader
         title={branch?.name || 'Branch Dashboard'}
         subtitle={`${branch?.city}, ${branch?.country}`}
-        badge={<DemoBadge />}
         actions={
           <Link to="/branch-admin/students" className="btn-primary">
             <Plus size={16} /> Add Student
@@ -47,15 +45,15 @@ export default function BranchAdminDashboard() {
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Active Students" value={branchStudents.length} icon={<GraduationCap size={18} />} color="#4D7CFF" demo={false} sub={`${branch?.capacity || 0} capacity`} />
-        <StatCard label="Teachers" value={branchTeachers.length} icon={<Users size={18} />} color="#7B61FF" demo={false} />
-        <StatCard label="Active Batches" value={branchBatches.length} icon={<BookOpen size={18} />} color="#00F0FF" demo={false} />
+        <StatCard label="Active Students" value={branchStudents.length} icon={<GraduationCap size={18} />} color="#4D7CFF" progress={{ current: branchStudents.length, max: branch?.capacity || 0 }} />
+        <StatCard label="Teachers" value={branchTeachers.length} icon={<Users size={18} />} color="#7B61FF" />
+        <StatCard label="Active Batches" value={branchBatches.length} icon={<BookOpen size={18} />} color="#00F0FF" />
         <StatCard
           label="Today Attendance"
           value={todayAtt.length === 0 ? 'Not marked yet' : `${todayRate}%`}
           icon={<UserCheck size={18} />}
           color={todayAtt.length === 0 ? '#FBBF24' : todayRate >= 80 ? '#00FFA3' : '#FF6B7A'}
-          demo={false}
+         
         />
       </div>
 
@@ -63,7 +61,6 @@ export default function BranchAdminDashboard() {
       <div className="plato-card p-5">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-sm font-semibold text-foreground">Weekly Attendance</h3>
-          <DemoBadge />
         </div>
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={weekDays} barGap={2}>
@@ -71,8 +68,8 @@ export default function BranchAdminDashboard() {
             <XAxis dataKey="day" tick={{ fill: '#6B7280', fontSize: 12 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill: '#6B7280', fontSize: 11 }} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E2940', borderRadius: 12, fontSize: 12 }} />
-            <Bar dataKey="present" fill="#00FFA3" radius={[4, 4, 0, 0]} name="Present" />
-            <Bar dataKey="absent" fill="#FF6B7A" radius={[4, 4, 0, 0]} name="Absent" />
+            <Bar animationDuration={600} dataKey="present" fill="#00FFA3" radius={[4, 4, 0, 0]} name="Present" />
+            <Bar animationDuration={600} dataKey="absent" fill="#FF6B7A" radius={[4, 4, 0, 0]} name="Absent" />
           </BarChart>
         </ResponsiveContainer>
       </div>

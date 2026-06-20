@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { BookOpen, TrendingUp, Layers } from 'lucide-react'
 
@@ -42,7 +41,7 @@ export default function AcademicReportsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Academic Reports" subtitle="Termly and annual academic performance reports by curriculum and branch" badge={<DemoBadge />} />
+      <PageHeader title="Academic Reports" subtitle="Termly and annual academic performance reports by curriculum and branch" />
 
       <div className="grid grid-cols-3 gap-3">
         <div className="plato-card p-4 text-center">
@@ -70,7 +69,7 @@ export default function AcademicReportsPage() {
               <XAxis dataKey="curriculum" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} />
               <Tooltip contentStyle={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 12 }} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-              <Bar dataKey="avg" fill="#4D7CFF" radius={[6, 6, 0, 0]} />
+              <Bar animationDuration={600} dataKey="avg" fill="#4D7CFF" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -82,7 +81,7 @@ export default function AcademicReportsPage() {
               <XAxis dataKey="branch" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} />
               <Tooltip contentStyle={{ background: '#0B0F1E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 12 }} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-              <Bar dataKey="avg" fill="#00FFA3" radius={[6, 6, 0, 0]} />
+              <Bar animationDuration={600} dataKey="avg" fill="#00FFA3" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -1,12 +1,12 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatDate, getStatusColor } from '@/lib/utils'
 import { Link } from 'react-router-dom'
 import { Target, UserCheck, TrendingUp, Clock, ArrowRight, Plus } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
+import { InsightsStrip, type Insight } from '@/components/ui/InsightsStrip'
 
 const sourceData = [
   { name: 'Referral', value: 35, color: '#4D7CFF' },
@@ -31,12 +31,30 @@ export default function SalesDashboard() {
   const enrolled = leads.filter((l) => l.status === 'enrolled').length
   const conversionRate = leads.length > 0 ? Math.round((enrolled / leads.length) * 100) : 0
 
+  const todayStr = new Date().toISOString().split('T')[0]
+  const followUpsToday = leads.filter((l) => l.followUpDate === todayStr && l.status !== 'enrolled' && l.status !== 'lost').length
+
+  const now = new Date()
+  const trialsThisMonth = leads.filter((l) => l.trialDate && new Date(l.trialDate).getMonth() === now.getMonth() && new Date(l.trialDate).getFullYear() === now.getFullYear())
+  const enrolledFromTrials = trialsThisMonth.filter((l) => l.status === 'enrolled').length
+  const monthConversionRate = trialsThisMonth.length > 0 ? Math.round((enrolledFromTrials / trialsThisMonth.length) * 100) : null
+
+  const staleLead = leads
+    .filter((l) => l.status !== 'enrolled' && l.status !== 'lost')
+    .map((l) => ({ lead: l, daysSince: Math.floor((Date.now() - new Date(l.followUpDate || l.createdAt).getTime()) / 86400000) }))
+    .filter((x) => x.daysSince >= 7)
+    .sort((a, b) => b.daysSince - a.daysSince)[0]
+
+  const insights: Insight[] = []
+  if (followUpsToday > 0) insights.push({ icon: '📞', text: <><strong>{followUpsToday}</strong> follow-up{followUpsToday === 1 ? '' : 's'} due today</> })
+  if (monthConversionRate !== null) insights.push({ icon: '🎯', text: <>Conversion rate this month: <strong>{monthConversionRate}%</strong> ({enrolledFromTrials} of {trialsThisMonth.length} trials enrolled)</>, tone: 'purple' })
+  if (staleLead) insights.push({ icon: '⏰', text: <><strong>{staleLead.lead.studentName}</strong>'s lead has had no contact in {staleLead.daysSince} days</> })
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Admissions Command Centre"
         subtitle="Track leads, trials, and enrolments"
-        badge={<DemoBadge />}
         actions={
           <Link to="/sales/leads" className="btn-primary">
             <Plus size={16} /> Add Lead
@@ -44,19 +62,20 @@ export default function SalesDashboard() {
         }
       />
 
+      <InsightsStrip insights={insights} />
+
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="New Leads" value={newLeads} icon={<Target size={18} />} color="#4D7CFF" demo={false} />
-        <StatCard label="Trials Scheduled" value={trialScheduled} icon={<Clock size={18} />} color="#7B61FF" demo={false} />
-        <StatCard label="Enrolled" value={enrolled} icon={<UserCheck size={18} />} color="#00FFA3" demo={false} />
-        <StatCard label="Conversion Rate" value={`${conversionRate}%`} icon={<TrendingUp size={18} />} color="#C6FF00" demo={false} sub={`${leads.length} total leads`} />
+        <StatCard label="New Leads" value={newLeads} icon={<Target size={18} />} color="#4D7CFF" />
+        <StatCard label="Trials Scheduled" value={trialScheduled} icon={<Clock size={18} />} color="#7B61FF" />
+        <StatCard label="Enrolled" value={enrolled} icon={<UserCheck size={18} />} color="#00FFA3" />
+        <StatCard label="Conversion Rate" value={`${conversionRate}%`} icon={<TrendingUp size={18} />} color="#C6FF00" sub={`${leads.length} total leads`} />
       </div>
 
       {/* Funnel */}
       <div className="plato-card p-5">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-sm font-semibold text-foreground">Lead Funnel</h3>
-          <DemoBadge />
         </div>
         <div className="flex items-end gap-2 h-32">
           {STATUS_STEPS.map((step, idx) => {
@@ -82,11 +101,10 @@ export default function SalesDashboard() {
         <div className="plato-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-foreground">Lead Sources</h3>
-            <DemoBadge />
           </div>
           <div className="flex items-center gap-6">
             <PieChart width={130} height={130}>
-              <Pie data={sourceData} cx={65} cy={65} innerRadius={40} outerRadius={62} dataKey="value" strokeWidth={0}>
+              <Pie animationDuration={600} data={sourceData} cx={65} cy={65} innerRadius={40} outerRadius={62} dataKey="value" strokeWidth={0}>
                 {sourceData.map((e, i) => <Cell key={i} fill={e.color} />)}
               </Pie>
             </PieChart>
@@ -108,7 +126,6 @@ export default function SalesDashboard() {
         <div className="plato-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-foreground">Leads This Week</h3>
-            <DemoBadge />
           </div>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={weeklyLeads}>
@@ -116,7 +133,7 @@ export default function SalesDashboard() {
               <XAxis dataKey="day" tick={{ fill: '#6B7280', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: '#6B7280', fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E2940', borderRadius: 12, fontSize: 12 }} />
-              <Bar dataKey="leads" fill="#4D7CFF" radius={[4, 4, 0, 0]} />
+              <Bar animationDuration={600} dataKey="leads" fill="#4D7CFF" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

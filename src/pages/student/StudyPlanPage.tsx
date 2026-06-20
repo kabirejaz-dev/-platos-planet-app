@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { generateId, formatDate } from '@/lib/utils'
 import { toast } from '@/components/ui/Toaster'
@@ -68,7 +67,6 @@ export default function StudyPlanPage() {
       <PageHeader
         title="Study Plan"
         subtitle="Demo: auto-generated from a sample topic bank — not yet driven by a real AI model"
-        badge={<DemoBadge />}
         actions={
           <div className="flex gap-2">
             <select className="plato-input text-[13px]" value={subject} onChange={(e) => setSubject(e.target.value as Subject)}>
