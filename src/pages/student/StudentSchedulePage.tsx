@@ -16,7 +16,7 @@ export default function StudentSchedulePage() {
   if (!student) return <div className="text-white/30 p-6">Student profile not found.</div>
 
   const myBatches = batches.filter((b) => student.batchIds.includes(b.id))
-  const todayDay = DAYS[new Date().getDay() - 1] || 'Mon'
+  const todayDay = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()]
 
   const getClassesForDay = (day: string) =>
     myBatches
