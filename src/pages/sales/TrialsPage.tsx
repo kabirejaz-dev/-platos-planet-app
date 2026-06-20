@@ -8,7 +8,7 @@ import { Calendar, Phone, CheckCircle2, XCircle, Clock, MapPin } from 'lucide-re
 import type { Lead } from '@/types'
 
 export default function TrialsPage() {
-  const { leads, updateLead, branches } = useAppStore()
+  const { leads, updateLead, branches, teachers } = useAppStore()
   const [tab, setTab] = useState<'upcoming' | 'completed' | 'no_show'>('upcoming')
 
   const trials = leads.filter((l) => l.status === 'trial_scheduled' || l.status === 'trial_done')
@@ -35,7 +35,7 @@ export default function TrialsPage() {
   const today = new Date().toISOString().split('T')[0]
 
   const TrialCard = ({ lead }: { lead: Lead }) => {
-    const isToday = lead.followUpDate === today
+    const isToday = lead.trialDate === today
 
     return (
       <div
@@ -57,11 +57,14 @@ export default function TrialsPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-4 text-[11px] text-white/40">
-          {lead.followUpDate && (
-            <span className="flex items-center gap-1"><Calendar size={11} /> {formatDate(lead.followUpDate)}</span>
+        <div className="flex items-center gap-4 text-[11px] text-white/40 flex-wrap">
+          {lead.trialDate && (
+            <span className="flex items-center gap-1"><Calendar size={11} /> {formatDate(lead.trialDate)}{lead.trialTimeSlot ? ` · ${lead.trialTimeSlot}` : ''}</span>
           )}
-          <span className="flex items-center gap-1"><MapPin size={11} /> {branches.find((b) => b.id === lead.branchId)?.name || lead.branchId}</span>
+          <span className="flex items-center gap-1"><MapPin size={11} /> {branches.find((b) => b.id === lead.branchId)?.name || lead.branchId}{lead.trialRoom ? ` · ${lead.trialRoom}` : ''}</span>
+          {lead.trialTeacherId && (
+            <span className="flex items-center gap-1">👩‍🏫 {teachers.find((t) => t.id === lead.trialTeacherId)?.name || 'Unassigned'}</span>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-1">
@@ -112,7 +115,7 @@ export default function TrialsPage() {
         </div>
         <div className="plato-card p-4 text-center">
           <p className="text-[24px] font-bold font-display text-[#FBBF24]">
-            {upcoming.filter((l) => l.followUpDate === today).length}
+            {upcoming.filter((l) => l.trialDate === today).length}
           </p>
           <p className="text-[11px] text-white/30 mt-1">Today</p>
         </div>

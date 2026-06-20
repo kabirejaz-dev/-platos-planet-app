@@ -4,8 +4,8 @@ import { toast } from '@/components/ui/Toaster'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Avatar } from '@/components/ui/Avatar'
 import { generateId } from '@/lib/utils'
-import type { AttendanceStatus } from '@/types'
-import { CheckCircle2, XCircle, Clock, FileCheck, Save } from 'lucide-react'
+import type { AttendanceStatus, Student } from '@/types'
+import { CheckCircle2, XCircle, Clock, FileCheck, Save, AlertTriangle, MessageCircle } from 'lucide-react'
 
 const statusConfig: Record<AttendanceStatus, { label: string; color: string; icon: React.ReactNode }> = {
   present: { label: 'Present', color: '#00FFA3', icon: <CheckCircle2 size={16} /> },
@@ -15,7 +15,7 @@ const statusConfig: Record<AttendanceStatus, { label: string; color: string; ico
 }
 
 export default function AttendancePage() {
-  const { currentUser, teachers, batches, students, attendance, bulkAddAttendance, addNotification } = useAppStore()
+  const { currentUser, teachers, batches, students, parents, attendance, bulkAddAttendance, addNotification } = useAppStore()
   const teacher = teachers.find((t) => t.userId === currentUser?.id)
   const myBatches = batches.filter((b) => b.teacherId === teacher?.id && b.status === 'active')
 
@@ -24,6 +24,7 @@ export default function AttendancePage() {
   const [marks, setMarks] = useState<Record<string, AttendanceStatus>>({})
   const [notes] = useState<Record<string, string>>({})
   const [saved, setSaved] = useState(false)
+  const [absentAlert, setAbsentAlert] = useState<Student[] | null>(null)
 
   const batch = batches.find((b) => b.id === selectedBatch)
   const batchStudents = students.filter((s) => batch?.studentIds.includes(s.id))
@@ -68,10 +69,22 @@ export default function AttendancePage() {
       })
     })
 
-    const absentNames = records.filter((r) => r.status === 'absent').map((r) => students.find((s) => s.id === r.studentId)?.name).filter(Boolean)
-    toast.success('Attendance saved', absentNames.length > 0 ? `${absentNames.length} student${absentNames.length > 1 ? 's' : ''} marked absent` : `${presentCount} present · all recorded`)
+    const absentStudents = records.filter((r) => r.status === 'absent').map((r) => students.find((s) => s.id === r.studentId)).filter((s): s is Student => Boolean(s))
+    toast.success('Attendance saved', absentStudents.length > 0 ? `${absentStudents.length} student${absentStudents.length > 1 ? 's' : ''} marked absent` : `${presentCount} present · all recorded`)
     setSaved(true)
+    setAbsentAlert(absentStudents.length > 0 ? absentStudents : null)
     setTimeout(() => setSaved(false), 3000)
+  }
+
+  const sendWhatsAppToParents = () => {
+    if (!absentAlert) return
+    absentAlert.forEach((student) => {
+      const parent = parents.find((p) => p.studentIds.includes(student.id))
+      if (!parent?.phone) return
+      const phone = parent.phone.replace(/[^\d]/g, '')
+      const message = encodeURIComponent(`Hi ${parent.name}, this is to inform you that ${student.name} was marked absent today (${date}). Please contact the school if you have any questions.`)
+      window.open(`https://wa.me/${phone}?text=${message}`, '_blank')
+    })
   }
 
   const presentCount = batchStudents.filter((s) => resolvedMarks(s.id) === 'present').length
@@ -89,6 +102,18 @@ export default function AttendancePage() {
           </button>
         }
       />
+
+      {absentAlert && absentAlert.length > 0 && (
+        <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-[#FBBF24]/10 border border-[#FBBF24]/30">
+          <div className="flex items-center gap-2 text-sm text-[#FBBF24]">
+            <AlertTriangle size={16} />
+            ⚠️ {absentAlert.length} student{absentAlert.length === 1 ? '' : 's'} absent today. Send parent notifications?
+          </div>
+          <button className="btn-primary text-sm flex-shrink-0" style={{ background: '#00D964' }} onClick={sendWhatsAppToParents}>
+            <MessageCircle size={14} /> Send WhatsApp to Parents
+          </button>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-4">

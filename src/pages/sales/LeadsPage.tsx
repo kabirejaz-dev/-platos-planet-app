@@ -164,7 +164,7 @@ export default function LeadsPage() {
   const [trialLeadId, setTrialLeadId] = useState<string | null>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOverStatus, setDragOverStatus] = useState<LeadStatus | null>(null)
-  const [trialForm, setTrialForm] = useState({ branchId: '', date: '', timeSlot: TIME_SLOTS[0], teacherId: '' })
+  const [trialForm, setTrialForm] = useState({ branchId: '', date: '', timeSlot: TIME_SLOTS[0], teacherId: '', room: '' })
   const [form, setForm] = useState({
     parentName: '', parentEmail: '', parentPhone: '',
     studentName: '', studentAge: '', grade: '',
@@ -248,6 +248,7 @@ export default function LeadsPage() {
       date: '',
       timeSlot: TIME_SLOTS[0],
       teacherId: teachers.find((t) => t.curriculums.includes(lead.curriculum))?.id || '',
+      room: '',
     })
   }
 
@@ -258,6 +259,8 @@ export default function LeadsPage() {
       branchId: trialForm.branchId,
       trialDate: trialForm.date,
       trialTimeSlot: trialForm.timeSlot,
+      trialTeacherId: trialForm.teacherId || undefined,
+      trialRoom: trialForm.room || undefined,
     })
     toast.success('Trial class scheduled', `${formatDate(trialForm.date)} at ${trialForm.timeSlot}`)
     setTrialLeadId(null)
@@ -582,12 +585,18 @@ export default function LeadsPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Teacher</label>
-              <select className="plato-input" value={trialForm.teacherId} onChange={(e) => setTrialForm((f) => ({ ...f, teacherId: e.target.value }))}>
-                <option value="">Select teacher…</option>
-                {matchingTeachers.map((t) => <option key={t.id} value={t.id}>{t.name} — {t.subjects.join(', ')}</option>)}
-              </select>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Teacher</label>
+                <select className="plato-input" value={trialForm.teacherId} onChange={(e) => setTrialForm((f) => ({ ...f, teacherId: e.target.value }))}>
+                  <option value="">Select teacher…</option>
+                  {matchingTeachers.map((t) => <option key={t.id} value={t.id}>{t.name} — {t.subjects.join(', ')}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Room</label>
+                <input className="plato-input" placeholder="e.g. Room 101" value={trialForm.room} onChange={(e) => setTrialForm((f) => ({ ...f, room: e.target.value }))} />
+              </div>
             </div>
 
             <div className="flex gap-3 pt-2">

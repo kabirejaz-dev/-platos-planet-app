@@ -10,6 +10,7 @@ import type {
 } from '@/types';
 import { seedData } from '@/data/seed';
 import { toast } from '@/hooks/useToast';
+import { generateId } from '@/lib/utils';
 
 // Defense-in-depth: which roles may write to each entity domain. This mirrors
 // ROLE_PATH_ACCESS in App.tsx, but route guards alone don't stop a logged-in
@@ -50,6 +51,28 @@ function guardRole(get: () => AppState, domain: keyof typeof ROLE_ACCESS): boole
     return false;
   }
   return true;
+}
+
+function logAudit(
+  get: () => AppState,
+  set: (fn: (s: AppState) => Partial<AppState>) => void,
+  action: string,
+  entityType: string,
+  details: string,
+  severity: AuditLogEntry['severity'] = 'info',
+  entityId?: string
+) {
+  const entry: AuditLogEntry = {
+    id: `al-${generateId()}`,
+    userId: get().currentUser?.id || 'system',
+    action,
+    entityType,
+    entityId,
+    details,
+    timestamp: new Date().toISOString(),
+    severity,
+  };
+  set((s) => ({ auditLog: [entry, ...s.auditLog] }));
 }
 
 interface AppState {
@@ -243,6 +266,7 @@ export const useAppStore = create<AppState>()(
       addStudent: (student) => {
         if (!guardRole(get, 'student')) return;
         set((s) => ({ students: [...s.students, student] }));
+        logAudit(get, set, 'Enrolled Student', 'Student', student.name, 'info', student.id);
       },
       updateStudent: (id, updates) => {
         if (!guardRole(get, 'student')) return;
@@ -340,6 +364,10 @@ export const useAppStore = create<AppState>()(
       updateInvoice: (id, updates) => {
         if (!guardRole(get, 'invoice')) return;
         set((s) => ({ invoices: s.invoices.map((i) => (i.id === id ? { ...i, ...updates } : i)) }));
+        if (updates.paidAmount !== undefined) {
+          const invoice = get().invoices.find((i) => i.id === id);
+          logAudit(get, set, 'Recorded Payment', 'Invoice', `${invoice?.invoiceNumber || id} · AED ${updates.paidAmount}`, 'info', id);
+        }
       },
 
       addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
@@ -375,6 +403,7 @@ export const useAppStore = create<AppState>()(
       addUser: (user) => {
         if (!guardRole(get, 'user')) return;
         set((s) => ({ users: [...s.users, user] }));
+        logAudit(get, set, 'Created User Account', 'User', `${user.name} · ${user.role}`, 'info', user.id);
       },
       updateUser: (id, updates) => {
         if (!guardRole(get, 'user')) return;
@@ -434,6 +463,10 @@ export const useAppStore = create<AppState>()(
       updateBranchRequest: (id, updates) => {
         if (!guardRole(get, 'branchRequest')) return;
         set((s) => ({ branchRequests: s.branchRequests.map((r) => (r.id === id ? { ...r, ...updates } : r)) }));
+        if (updates.status === 'approved' || updates.status === 'rejected') {
+          const request = get().branchRequests.find((r) => r.id === id);
+          logAudit(get, set, updates.status === 'approved' ? 'Approved Request' : 'Rejected Request', 'BranchRequest', request?.title || id, updates.status === 'rejected' ? 'warning' : 'info', id);
+        }
       },
 
       addClassNote: (note) => {
@@ -489,6 +522,7 @@ export const useAppStore = create<AppState>()(
       addExpense: (expense) => {
         if (!guardRole(get, 'expense')) return;
         set((s) => ({ expenses: [...s.expenses, expense] }));
+        logAudit(get, set, 'Added Expense', 'Expense', `${expense.description} · AED ${expense.amount}`, 'info', expense.id);
       },
 
       addStudyPlan: (plan) => set((s) => ({ studyPlans: [...s.studyPlans, plan] })),

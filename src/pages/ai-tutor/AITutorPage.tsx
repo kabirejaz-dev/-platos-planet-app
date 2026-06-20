@@ -4,6 +4,7 @@ import { useAppStore } from '@/store/appStore'
 import { generateId } from '@/lib/utils'
 import { askClaude, hasAnthropicKey } from '@/lib/anthropic'
 import { Modal } from '@/components/ui/Modal'
+import { CelebrationOverlay } from '@/components/ui/CelebrationOverlay'
 import { RequiredMark, RequiredFieldsNote } from '@/components/ui/FormField'
 import { Brain, Send, Sparkles, BookOpen, Zap, RotateCcw, Bookmark, AlertTriangle, Plus } from 'lucide-react'
 import type { Subject, AIMessage } from '@/types'
@@ -113,11 +114,13 @@ const DEFAULT_FLASHCARDS: Record<string, Flashcard[]> = {
   ],
 }
 
-const CUSTOM_CARDS_KEY = 'plato_custom_flashcards'
+function flashcardsKey(studentId: string | undefined): string {
+  return `pp_flashcards_${studentId || 'guest'}`
+}
 
-function loadCustomFlashcards(): Record<string, Flashcard[]> {
+function loadCustomFlashcards(studentId: string | undefined): Record<string, Flashcard[]> {
   try {
-    const raw = localStorage.getItem(CUSTOM_CARDS_KEY)
+    const raw = localStorage.getItem(flashcardsKey(studentId))
     return raw ? JSON.parse(raw) : {}
   } catch {
     return {}
@@ -135,7 +138,7 @@ export default function AITutorPage() {
   const student = students.find((s) => s.userId === currentUser?.id)
   const location = useLocation()
 
-  const [selectedSubject, setSelectedSubject] = useState<Subject>('Physics')
+  const [selectedSubject, setSelectedSubject] = useState<Subject>(() => student?.subjects[0] ?? 'Physics')
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [activeConvId, setActiveConvId] = useState<string | null>(null)
@@ -167,7 +170,22 @@ export default function AITutorPage() {
   }
 
   const sendMessage = async () => {
-    if (!input.trim() || !activeConvId) return
+    if (!input.trim() || !student) return
+
+    let convId = activeConvId
+    if (!convId) {
+      const conv = {
+        id: `conv-${generateId()}`,
+        studentId: student.id,
+        subject: selectedSubject,
+        messages: [],
+        createdAt: new Date().toISOString(),
+      }
+      addConversation(conv)
+      setActiveConvId(conv.id)
+      convId = conv.id
+    }
+
     const userMsg: AIMessage = {
       id: generateId(),
       role: 'user',
@@ -175,8 +193,8 @@ export default function AITutorPage() {
       timestamp: new Date().toISOString(),
     }
 
-    const conv = conversations.find((c) => c.id === activeConvId)
-    updateConversation(activeConvId, {
+    const conv = conversations.find((c) => c.id === convId)
+    updateConversation(convId, {
       messages: [...(conv?.messages || []), userMsg],
     })
     const question = input.trim()
@@ -199,12 +217,12 @@ export default function AITutorPage() {
       timestamp: new Date().toISOString(),
     }
 
-    const updatedConv = conversations.find((c) => c.id === activeConvId)
-    updateConversation(activeConvId, {
+    const updatedConv = conversations.find((c) => c.id === convId)
+    updateConversation(convId, {
       messages: [...(updatedConv?.messages || []), userMsg, aiMsg],
     })
 
-    if (student) addXP(student.id, 10)
+    addXP(student.id, 10)
     setIsTyping(false)
   }
 
@@ -223,22 +241,33 @@ export default function AITutorPage() {
   const [quiz, setQuiz] = useState<Array<{ q: string; options: string[]; answer: number; explanation: string }> | null>(null)
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({})
   const [quizSubmitted, setQuizSubmitted] = useState(false)
+  const [showQuizCelebration, setShowQuizCelebration] = useState(false)
 
   const generateQuiz = () => {
     setQuiz([
       { q: `In ${quizSubject}, which of the following best describes ${quizTopic || 'a key concept'}?`, options: ['Option A', 'Option B — Correct answer', 'Option C', 'Option D'], answer: 1, explanation: `Option B is correct because it accurately describes the fundamental principle in ${quizSubject}.` },
       { q: `A common application of ${quizTopic || quizSubject} is:`, options: ['Application X', 'Application Y', 'Application Z — Correct', 'Application W'], answer: 2, explanation: `Application Z correctly demonstrates this concept in a real-world context.` },
       { q: `Which formula is associated with ${quizTopic || quizSubject}?`, options: ['F = mv', 'E = mc²', 'F = ma — Correct for this context', 'P = IV'], answer: 2, explanation: 'This formula is the key equation for solving these types of problems.' },
+      { q: `Which statement about ${quizTopic || quizSubject} is FALSE?`, options: ['Statement A — Correct (this is the false one)', 'Statement B', 'Statement C', 'Statement D'], answer: 0, explanation: `Statement A contradicts the accepted theory of ${quizTopic || quizSubject}.` },
+      { q: `A student is asked to explain ${quizTopic || quizSubject} in an exam. The best approach is to:`, options: ['Skip the working', 'State the definition, then show worked steps — Correct', 'Guess the answer', 'Copy the question'], answer: 1, explanation: 'Examiners award marks for clearly shown working, not just the final answer.' },
     ])
     setQuizAnswers({})
     setQuizSubmitted(false)
-    if (student) addXP(student.id, 20)
+    setShowQuizCelebration(false)
+  }
+
+  const submitQuiz = () => {
+    setQuizSubmitted(true)
+    if (student) {
+      addXP(student.id, 20)
+      setShowQuizCelebration(true)
+    }
   }
 
   // Flashcards
   const [cardSubject, setCardSubject] = useState<Subject>('Physics')
   const [flipped, setFlipped] = useState<Record<number, boolean>>({})
-  const [customCards, setCustomCards] = useState<Record<string, Flashcard[]>>(() => loadCustomFlashcards())
+  const [customCards, setCustomCards] = useState<Record<string, Flashcard[]>>(() => loadCustomFlashcards(student?.id))
   const [showCardModal, setShowCardModal] = useState(false)
   const [cardForm, setCardForm] = useState({ front: '', back: '' })
 
@@ -253,7 +282,7 @@ export default function AITutorPage() {
       [cardSubject]: [...(customCards[cardSubject] || []), { front: cardForm.front.trim(), back: cardForm.back.trim() }],
     }
     setCustomCards(updated)
-    localStorage.setItem(CUSTOM_CARDS_KEY, JSON.stringify(updated))
+    localStorage.setItem(flashcardsKey(student?.id), JSON.stringify(updated))
     closeCardModal()
   }
 
@@ -327,7 +356,7 @@ export default function AITutorPage() {
                 {(SAMPLE_QUESTIONS[selectedSubject] || []).map((q) => (
                   <button
                     key={q}
-                    onClick={() => { if (!activeConvId) startNewConv(); setInput(q) }}
+                    onClick={() => setInput(q)}
                     className="w-full text-left text-xs text-muted-foreground hover:text-foreground p-2.5 rounded-xl bg-white/3 border border-dark-border hover:border-[#7B61FF]/40 transition-all"
                   >
                     {q}
@@ -357,70 +386,74 @@ export default function AITutorPage() {
 
           {/* Right: Chat */}
           <div className="lg:col-span-2 plato-card flex flex-col overflow-hidden">
-            {!activeConvId ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#7B61FF] to-[#00F0FF] flex items-center justify-center mb-4">
-                  <Brain size={40} className="text-white" />
+            <div className="px-5 py-3 border-b border-dark-border flex items-center gap-2 flex-wrap">
+              <p className="text-sm font-semibold text-foreground">{activeConv?.subject || selectedSubject} Tutor</p>
+              {student && (
+                <span className="text-xs text-muted-foreground">· {student.curriculum} · {student.grade}</span>
+              )}
+            </div>
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              {(activeConv?.messages || []).length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center">
+                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#7B61FF] to-[#00F0FF] flex items-center justify-center mb-4">
+                    <Brain size={40} className="text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground font-display mb-2">Ask me anything about {selectedSubject}</h3>
+                  <p className="text-sm text-muted-foreground max-w-sm">Type a question below, or pick one of the quick questions on the left.</p>
                 </div>
-                <h3 className="text-xl font-bold text-foreground font-display mb-2">Start a conversation</h3>
-                <p className="text-sm text-muted-foreground max-w-sm">Select a subject and click "New Conversation" or pick a quick question to get started.</p>
-              </div>
-            ) : (
-              <>
-                <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                  {(activeConv?.messages || []).map((msg) => (
-                    <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div
-                        className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.role === 'user' ? 'bg-[#4D7CFF] text-white rounded-tr-sm' : 'bg-white/5 border border-dark-border text-foreground rounded-tl-sm'}`}
-                      >
-                        {msg.role === 'assistant' ? (
-                          <>
-                            <div className="whitespace-pre-wrap">{renderFormatted(msg.content)}</div>
-                            <button
-                              onClick={() => toggleSaved(msg.id)}
-                              className={`flex items-center gap-1 text-[11px] mt-2 transition-colors ${msg.saved ? 'text-[#FBBF24]' : 'text-muted-foreground hover:text-foreground'}`}
-                            >
-                              <Bookmark size={12} fill={msg.saved ? '#FBBF24' : 'none'} /> {msg.saved ? 'Saved' : 'Save answer'}
-                            </button>
-                          </>
-                        ) : (
-                          msg.content
-                        )}
-                      </div>
+              ) : (
+                (activeConv?.messages || []).map((msg) => (
+                  <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                      className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.role === 'user' ? 'bg-[#4D7CFF] text-white rounded-tr-sm' : 'bg-white/5 border border-dark-border text-foreground rounded-tl-sm'}`}
+                    >
+                      {msg.role === 'assistant' ? (
+                        <>
+                          <div className="whitespace-pre-wrap">{renderFormatted(msg.content)}</div>
+                          <button
+                            onClick={() => toggleSaved(msg.id)}
+                            className={`flex items-center gap-1 text-[11px] mt-2 transition-colors ${msg.saved ? 'text-[#FBBF24]' : 'text-muted-foreground hover:text-foreground'}`}
+                          >
+                            <Bookmark size={12} fill={msg.saved ? '#FBBF24' : 'none'} /> {msg.saved ? 'Saved' : 'Save answer'}
+                          </button>
+                        </>
+                      ) : (
+                        msg.content
+                      )}
                     </div>
-                  ))}
+                  </div>
+                ))
+              )}
 
-                  {isTyping && (
-                    <div className="flex justify-start">
-                      <div className="bg-white/5 border border-dark-border px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5">
-                        {[0, 1, 2].map((i) => (
-                          <div key={i} className="w-2 h-2 rounded-full bg-[#7B61FF] animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-white/5 border border-dark-border px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="w-2 h-2 rounded-full bg-[#7B61FF] animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                    ))}
+                  </div>
                 </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
 
-                <div className="p-4 border-t border-dark-border flex items-center gap-3">
-                  <input
-                    className="plato-input flex-1"
-                    placeholder={`Ask anything about ${selectedSubject}…`}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-                  />
-                  <button
-                    onClick={sendMessage}
-                    disabled={!input.trim() || isTyping}
-                    aria-label="Send message"
-                    className="w-10 h-10 rounded-xl bg-[#7B61FF] text-white flex items-center justify-center hover:bg-[#7B61FF]/90 transition-colors disabled:opacity-50 flex-shrink-0"
-                  >
-                    <Send size={16} />
-                  </button>
-                </div>
-              </>
-            )}
+            <div className="p-4 border-t border-dark-border flex items-center gap-3">
+              <input
+                className="plato-input flex-1"
+                placeholder={`Ask anything about ${selectedSubject}…`}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={!input.trim() || isTyping}
+                aria-label="Send message"
+                className="w-10 h-10 rounded-xl bg-[#7B61FF] text-white flex items-center justify-center hover:bg-[#7B61FF]/90 transition-colors disabled:opacity-50 flex-shrink-0"
+              >
+                <Send size={16} />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -478,13 +511,13 @@ export default function AITutorPage() {
                 </div>
               ))}
               {!quizSubmitted ? (
-                <button className="btn-primary" onClick={() => setQuizSubmitted(true)}>Submit Quiz</button>
+                <button className="btn-primary" onClick={submitQuiz}>Submit Quiz</button>
               ) : (
                 <div className="plato-card p-4 flex items-center gap-3">
                   <span className="text-2xl">🏆</span>
                   <div>
-                    <p className="font-semibold text-foreground">Score: {Object.entries(quizAnswers).filter(([idx, ans]) => ans === quiz[Number(idx)].answer).length}/{quiz.length}</p>
-                    <p className="text-xs text-muted-foreground">+20 XP earned for completing the quiz!</p>
+                    <p className="font-semibold text-foreground">You got {Object.entries(quizAnswers).filter(([idx, ans]) => ans === quiz[Number(idx)].answer).length}/{quiz.length} — +20 XP!</p>
+                    <p className="text-xs text-muted-foreground">Great work — keep practising to climb the leaderboard.</p>
                   </div>
                   <button className="btn-ghost ml-auto border border-dark-border text-sm" onClick={() => { setQuiz(null); setQuizSubmitted(false) }}>
                     <RotateCcw size={13} /> New Quiz
@@ -559,6 +592,14 @@ export default function AITutorPage() {
           </div>
         </div>
       </Modal>
+
+      <CelebrationOverlay
+        open={showQuizCelebration}
+        onClose={() => setShowQuizCelebration(false)}
+        xp={20}
+        studentFirstName={student?.name.split(' ')[0] || 'there'}
+        itemTitle={`${quizSubject} Quiz`}
+      />
     </div>
   )
 }

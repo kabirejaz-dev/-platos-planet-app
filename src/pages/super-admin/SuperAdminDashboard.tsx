@@ -147,12 +147,11 @@ export default function SuperAdminDashboard() {
         />
         <StatCard
           label="Branches"
-          value={branches.filter((b) => b.isActive).length}
+          value={branches.length}
           icon={<Building2 size={18} />}
           color="#7B61FF"
-         
           change={0}
-          changeLabel="vs last month"
+          changeLabel={`${branches.filter((b) => b.isActive).length} active`}
         />
         <StatCard
           label="Outstanding Fees"

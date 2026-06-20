@@ -40,7 +40,7 @@ const emptyForm = {
   studentName: '', dateOfBirth: '', nationality: '', parentName: '',
   parentPhone: '', parentEmail: '', programme: PROGRAMMES[0], branchId: '',
   grade: '', source: 'whatsapp' as typeof SOURCES[number]['value'], referrerName: '',
-  trialClass: true, trialDate: todayStr(), trialTimeSlot: TIME_SLOTS[0], notes: '',
+  trialClass: true, trialDate: todayStr(), trialTimeSlot: TIME_SLOTS[0], trialRoom: '', trialTeacherId: '', notes: '',
 }
 
 interface NewEnquiryModalProps {
@@ -49,7 +49,7 @@ interface NewEnquiryModalProps {
 }
 
 export function NewEnquiryModal({ open, onClose }: NewEnquiryModalProps) {
-  const { branches, currentUser, addLead } = useAppStore()
+  const { branches, teachers, currentUser, addLead } = useAppStore()
   const { current: form, setCurrent: setForm, isDirty } = useDirtyForm(emptyForm)
   const [phoneError, setPhoneError] = useState('')
   const [emailError, setEmailError] = useState('')
@@ -93,6 +93,8 @@ export function NewEnquiryModal({ open, onClose }: NewEnquiryModalProps) {
       notes: form.notes || undefined,
       trialDate: form.trialClass ? form.trialDate : undefined,
       trialTimeSlot: form.trialClass ? form.trialTimeSlot : undefined,
+      trialRoom: form.trialClass ? form.trialRoom || undefined : undefined,
+      trialTeacherId: form.trialClass ? form.trialTeacherId || undefined : undefined,
       dateOfBirth: form.dateOfBirth || undefined,
       nationality: form.nationality || undefined,
       referrerName: form.source === 'referral' ? form.referrerName || undefined : undefined,
@@ -212,6 +214,17 @@ export function NewEnquiryModal({ open, onClose }: NewEnquiryModalProps) {
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Preferred Time Slot</label>
               <select className="plato-input" value={form.trialTimeSlot} onChange={(e) => setForm({ ...form, trialTimeSlot: e.target.value })}>
                 {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Room</label>
+              <input className="plato-input" placeholder="e.g. Room 101" value={form.trialRoom} onChange={(e) => setForm({ ...form, trialRoom: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Teacher</label>
+              <select className="plato-input" value={form.trialTeacherId} onChange={(e) => setForm({ ...form, trialTeacherId: e.target.value })}>
+                <option value="">— Unassigned —</option>
+                {teachers.filter((t) => !form.branchId || t.branchId === form.branchId).map((t) => <option key={t.id} value={t.id}>{t.name} — {t.subjects.join(', ')}</option>)}
               </select>
             </div>
           </div>

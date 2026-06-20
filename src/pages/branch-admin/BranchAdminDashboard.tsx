@@ -2,13 +2,13 @@ import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
 import { Avatar } from '@/components/ui/Avatar'
-import { calculateAttendanceRate } from '@/lib/utils'
+import { calculateAttendanceRate, formatCurrency } from '@/lib/utils'
 import { Link } from 'react-router-dom'
-import { GraduationCap, Users, BookOpen, UserCheck, ArrowRight, Plus, ClipboardCheck } from 'lucide-react'
+import { GraduationCap, Users, BookOpen, UserCheck, ArrowRight, Plus, ClipboardCheck, HeartPulse } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function BranchAdminDashboard() {
-  const { currentUser, students, teachers, batches, attendance, branches } = useAppStore()
+  const { currentUser, students, teachers, batches, attendance, branches, invoices, branchRequests } = useAppStore()
 
   const branchId = currentUser?.branchId
   const branch = branches.find((b) => b.id === branchId)
@@ -20,6 +20,13 @@ export default function BranchAdminDashboard() {
   const today = new Date().toISOString().split('T')[0]
   const todayAtt = attendance.filter((a) => a.date === today && branchBatches.some((b) => b.id === a.batchId))
   const todayRate = calculateAttendanceRate(todayAtt.filter((a) => a.status === 'present').length, todayAtt.length)
+
+  const branchInvoices = invoices.filter((i) => i.branchId === branchId)
+  const outstandingInvoices = branchInvoices.filter((i) => i.status === 'pending' || i.status === 'overdue')
+  const outstandingTotal = outstandingInvoices.reduce((s, i) => s + (i.totalAmount - (i.paidAmount || 0)), 0)
+  const outstandingCurrency = outstandingInvoices[0]?.currency ?? 'AED'
+  const pendingBranchRequests = branchRequests.filter((r) => r.branchId === branchId && r.status === 'pending')
+  const capacityPct = branch?.capacity ? Math.round((branchStudents.length / branch.capacity) * 100) : null
 
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i))
@@ -43,6 +50,38 @@ export default function BranchAdminDashboard() {
           </Link>
         }
       />
+
+      {/* Branch health snapshot */}
+      <div className="plato-card p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <HeartPulse size={16} className="text-[#4D7CFF]" />
+          <h3 className="text-sm font-semibold text-foreground">{(branch?.name || 'Branch').toUpperCase()} — HEALTH SNAPSHOT</h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Enrolment</p>
+            <p className="text-sm font-semibold text-foreground">
+              {branchStudents.length}{branch?.capacity ? `/${branch.capacity} students` : ' students'} <span className="text-muted-foreground font-normal">{capacityPct !== null ? `(${capacityPct}% capacity)` : ''}</span>
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Attendance today</p>
+            <p className="text-sm font-semibold text-foreground">
+              {todayAtt.length === 0 ? 'Not marked yet' : `${todayAtt.filter((a) => a.status === 'present').length}/${todayAtt.length} (${todayRate}%)`}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Outstanding fees</p>
+            <p className="text-sm font-semibold text-foreground">
+              {formatCurrency(outstandingTotal, outstandingCurrency)} <span className="text-muted-foreground font-normal">({outstandingInvoices.length} invoice{outstandingInvoices.length === 1 ? '' : 's'})</span>
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Pending requests</p>
+            <p className="text-sm font-semibold text-foreground">{pendingBranchRequests.length}</p>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Active Students" value={branchStudents.length} icon={<GraduationCap size={18} />} color="#4D7CFF" progress={{ current: branchStudents.length, max: branch?.capacity || 0 }} />

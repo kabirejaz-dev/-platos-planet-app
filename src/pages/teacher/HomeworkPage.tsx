@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
 import { FieldError, fieldInputClass } from '@/components/ui/FormField'
-import { generateId, formatDate, getStatusColor } from '@/lib/utils'
+import { generateId, formatDate, getStatusColor, gradeFromPercentage } from '@/lib/utils'
 import { homeworkSchema, getFieldErrors } from '@/lib/schemas'
 import { Plus, ClipboardList, Users, Clock, CheckCircle2, Star } from 'lucide-react'
 import { toast } from '@/components/ui/Toaster'
@@ -147,6 +147,11 @@ export default function HomeworkPage() {
                           value={grading[key]?.marks || ''}
                           onChange={(e) => setGrading({ ...grading, [key]: { ...grading[key], marks: e.target.value } })}
                         />
+                        {grading[key]?.marks && (
+                          <span className="text-sm font-bold text-[#FBBF24] w-8 text-center">
+                            {gradeFromPercentage(Math.round((Number(grading[key].marks) / viewHW.maxMarks) * 100))}
+                          </span>
+                        )}
                         <input
                           placeholder="Feedback (optional)"
                           className="plato-input flex-1"

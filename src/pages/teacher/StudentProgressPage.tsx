@@ -54,6 +54,24 @@ export default function StudentProgressPage() {
       })
       .slice(-6)
 
+  const getTrend = (studentId: string): 'up' | 'down' | 'flat' => {
+    const recent = assessments
+      .filter((a) => a.teacherId === teacher.id && a.status === 'graded' && a.results.some((r) => r.studentId === studentId))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(-3)
+      .map((a) => a.results.find((r) => r.studentId === studentId)!.percentage)
+    if (recent.length < 2) return 'flat'
+    return recent[recent.length - 1] > recent[0] ? 'up' : recent[recent.length - 1] < recent[0] ? 'down' : 'flat'
+  }
+
+  const breakdownRows = myStudents.map((s) => ({
+    student: s,
+    avgScore: getAvgScore(s.id),
+    attRate: getAttendanceRate(s.id),
+    hwCompletion: getHwCompletion(s.id),
+    trend: getTrend(s.id),
+  }))
+
   const selected = myStudents.find((s) => s.id === selectedId) || myStudents[0]
 
   const attRate = selected ? getAttendanceRate(selected.id) : 0
@@ -196,6 +214,40 @@ export default function StudentProgressPage() {
           </div>
         )}
       </div>
+
+      {/* Class performance breakdown */}
+      {myStudents.length > 0 && (
+        <div className="plato-card overflow-hidden">
+          <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <h3 className="text-[13px] font-bold text-white/70">Class Performance Breakdown</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full plato-table">
+              <thead><tr><th>Student</th><th>Avg Score</th><th>Attendance %</th><th>Homework Completion</th><th>Trend</th></tr></thead>
+              <tbody>
+                {breakdownRows.map((row) => (
+                  <tr key={row.student.id} style={row.avgScore !== null && row.avgScore < 60 ? { background: 'rgba(251,191,36,0.06)' } : undefined}>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <Avatar name={row.student.name} size="xs" />
+                        <span className="text-[13px] text-white/80 font-medium">{row.student.name}</span>
+                      </div>
+                    </td>
+                    <td style={{ color: scoreColor(row.avgScore) }} className="font-semibold text-[13px]">{row.avgScore !== null ? `${row.avgScore}%` : '—'}</td>
+                    <td className="text-[13px] text-white/70">{row.attRate}%</td>
+                    <td className="text-[13px] text-white/70">{row.hwCompletion !== null ? `${row.hwCompletion}%` : '—'}</td>
+                    <td>
+                      {row.trend === 'up' && <TrendingUp size={15} className="text-[#00FFA3]" />}
+                      {row.trend === 'down' && <TrendingDown size={15} className="text-[#FF6B7A]" />}
+                      {row.trend === 'flat' && <Minus size={15} className="text-white/30" />}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

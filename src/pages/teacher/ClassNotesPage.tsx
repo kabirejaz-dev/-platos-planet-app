@@ -30,7 +30,14 @@ export default function ClassNotesPage() {
   const [selectedLogId, setSelectedLogId] = useState<string | null>(myLogs[0]?.id ?? null)
   const [isNewLog, setIsNewLog] = useState(false)
   const [logForm, setLogForm] = useState({ batchId: myBatches[0]?.id || '', date: todayStr(), topicCovered: '', homeworkId: '', nextClassPlan: '', privateNotes: '' })
-  const [uploadForm, setUploadForm] = useState({ batchId: myBatches[0]?.id || '', title: '', description: '', fileType: 'pdf' as ClassNote['fileType'] })
+  const [uploadForm, setUploadForm] = useState({ batchId: myBatches[0]?.id || '', title: '', description: '', fileType: 'pdf' as ClassNote['fileType'], fileName: '', fileDataUrl: '' })
+
+  const handleFileSelect = (file: File | undefined) => {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setUploadForm((f) => ({ ...f, fileName: file.name, fileDataUrl: String(reader.result) }))
+    reader.readAsDataURL(file)
+  }
 
   const selectedLog = isNewLog ? null : myLogs.find((l) => l.id === selectedLogId)
 
@@ -80,10 +87,12 @@ export default function ClassNotesPage() {
       subject: batch?.subject || 'Physics',
       fileType: uploadForm.fileType,
       uploadedAt: new Date().toISOString(),
+      fileName: uploadForm.fileName || undefined,
+      fileDataUrl: uploadForm.fileDataUrl || undefined,
     })
     toast.success('Note shared', `${uploadForm.title} is now visible to students.`)
     setShowUploadModal(false)
-    setUploadForm({ batchId: myBatches[0]?.id || '', title: '', description: '', fileType: 'pdf' })
+    setUploadForm({ batchId: myBatches[0]?.id || '', title: '', description: '', fileType: 'pdf', fileName: '', fileDataUrl: '' })
   }
 
   const getBatchName = (batchId: string) => batches.find((b) => b.id === batchId)?.name ?? 'Unknown batch'
@@ -214,6 +223,9 @@ export default function ClassNotesPage() {
                       <p className="text-[11px] text-white/35 mt-0.5">{batch?.name}</p>
                       {note.description && <p className="text-[11px] text-white/40 mt-1.5">{note.description}</p>}
                       <p className="text-[10px] text-white/25 mt-2">{formatDate(note.uploadedAt)} · {note.subject}</p>
+                      {note.fileDataUrl && (
+                        <a href={note.fileDataUrl} download={note.fileName} className="text-[11px] text-[#4D7CFF] hover:underline mt-1.5 inline-block">Download {note.fileName}</a>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -252,6 +264,16 @@ export default function ClassNotesPage() {
               <option value="video">Video</option>
               <option value="link">Link</option>
             </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-white/40 mb-1.5 uppercase tracking-wider">Attach File (optional)</label>
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"
+              className="plato-input"
+              onChange={(e) => handleFileSelect(e.target.files?.[0])}
+            />
+            {uploadForm.fileName && <p className="text-[11px] text-[#00FFA3] mt-1">{uploadForm.fileName}</p>}
           </div>
           <div className="flex gap-3 pt-2">
             <button className="btn-ghost flex-1 justify-center" onClick={() => setShowUploadModal(false)}>Cancel</button>

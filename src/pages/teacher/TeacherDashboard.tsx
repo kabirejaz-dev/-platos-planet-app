@@ -55,6 +55,17 @@ export default function TeacherDashboard() {
   })
 
   const nextClass = getNextClassSlot(myBatches)
+  const minutesUntilNextClass = nextClass && nextClass.daysUntil === 0
+    ? (() => {
+        const [h, m] = nextClass.startTime.split(':').map(Number)
+        const startMinutes = h * 60 + (m || 0)
+        const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes()
+        return startMinutes - nowMinutes
+      })()
+    : null
+
+  const todayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()]
+  const todaysBatches = myBatches.filter((b) => b.schedule.some((s) => s.day === todayAbbr))
 
   const insights: Insight[] = []
   if (strugglingStudent) insights.push({ icon: '⚠️', text: <><strong>{strugglingStudent.name}</strong> scored below 60% in the last 2 assessments — may need support</> })
@@ -120,14 +131,18 @@ export default function TeacherDashboard() {
           <Link to="/teacher/classes" className="text-xs text-[#4D7CFF] hover:underline flex items-center gap-1">View all <ArrowRight size={12} /></Link>
         </div>
 
-        {myBatches.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No active batches.</p>
+        {todaysBatches.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">No classes scheduled today.</p>
         ) : (
           <div className="space-y-3">
-            {myBatches.map((batch) => {
+            {nextClass && nextClass.daysUntil === 0 && minutesUntilNextClass !== null && minutesUntilNextClass > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#7B61FF]/10 border border-[#7B61FF]/25 text-[#7B61FF] text-sm font-medium">
+                <Clock size={14} /> {nextClass.item.subject} starts in {minutesUntilNextClass} minute{minutesUntilNextClass === 1 ? '' : 's'}{nextClass.item.room ? ` · Room ${nextClass.item.room}` : ''}
+              </div>
+            )}
+            {todaysBatches.map((batch) => {
               const batchStudents = students.filter((s) => batch.studentIds.includes(s.id))
-              const today = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()] as typeof batch.schedule[0]['day']
-              const todaySchedule = batch.schedule.find((s) => s.day === today)
+              const todaySchedule = batch.schedule.find((s) => s.day === todayAbbr)
               const isSubmitted = todayMarkedBatchIds.has(batch.id)
               const isExpanded = expandedBatchId === batch.id
               const draft = drafts[batch.id]
@@ -135,11 +150,14 @@ export default function TeacherDashboard() {
               const batchTodayPresent = batchTodayAtt.filter((a) => a.status === 'present').length
 
               return (
-                <div key={batch.id} className="rounded-xl bg-white/3 border border-dark-border/50 hover:border-[#4D7CFF]/30 transition-all overflow-hidden">
+                <div key={batch.id} className="rounded-xl bg-white/3 border-l-[3px] border-y border-r border-dark-border/50 hover:border-[#4D7CFF]/30 transition-all overflow-hidden" style={{ borderLeftColor: '#7B61FF' }}>
                   <div className="flex items-center gap-4 p-4">
-                    <div className="w-1 h-14 rounded-full bg-[#4D7CFF]" />
+                    <div className="w-1 h-14 rounded-full bg-[#7B61FF]" />
                     <div className="flex-1">
-                      <p className="font-semibold text-foreground">{batch.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-foreground">{batch.name}</p>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#7B61FF]/15 text-[#7B61FF]">TODAY</span>
+                      </div>
                       <div className="flex items-center gap-4 mt-1">
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                           <Users size={12} /> {batchStudents.length} students

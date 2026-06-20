@@ -7,11 +7,8 @@ import { formatCurrency, generateId, formatDate } from '@/lib/utils'
 import { formatAedOnBlur, parseAedOnFocus, aedNumber, formatDateUAE } from '@/lib/validation'
 import { toast } from '@/components/ui/Toaster'
 import { FileText } from 'lucide-react'
-import type { Curriculum, ProgrammeType, PaymentInstallment } from '@/types'
-
-const CURRICULA: Curriculum[] = ['IGCSE', 'A-Level', 'CBSE', 'IB', 'American']
-const PROGRAMME_TYPES: ProgrammeType[] = ['NEET-JEE', 'Robotics', 'Brainobrain', 'Oratory', 'IELTS', 'SAT', 'Languages']
-const PROGRAMME_LABEL: Record<string, string> = { 'NEET-JEE': 'NEET/IIT-JEE', SAT: 'SATs' }
+import type { PaymentInstallment } from '@/types'
+import { ALL_PROGRAMME_OPTIONS } from '@/lib/programmes'
 
 function todayStr() {
   return new Date().toISOString().split('T')[0]
@@ -199,10 +196,10 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
               <select className="plato-input" value={programme} onChange={(e) => setProgrammeOverride(e.target.value)} disabled={!student}>
                 <option value="">— Select Programme —</option>
                 <optgroup label="Curriculum">
-                  {CURRICULA.map((c) => <option key={c} value={c}>{c}</option>)}
+                  {ALL_PROGRAMME_OPTIONS.filter((o) => o.group === 'Curriculum').map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </optgroup>
                 <optgroup label="Enrichment Programme">
-                  {PROGRAMME_TYPES.map((p) => <option key={p} value={p}>{PROGRAMME_LABEL[p] || p}</option>)}
+                  {ALL_PROGRAMME_OPTIONS.filter((o) => o.group === 'Enrichment Programme').map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </optgroup>
               </select>
             </div>

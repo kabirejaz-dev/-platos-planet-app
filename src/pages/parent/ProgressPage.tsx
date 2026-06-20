@@ -1,6 +1,7 @@
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { formatDate, gradeFromPercentage, getGradeColor } from '@/lib/utils'
+import { Sparkline } from '@/components/ui/Sparkline'
 import { TrendingUp, BookOpen, Award, Target } from 'lucide-react'
 
 export default function ProgressPage() {
@@ -31,6 +32,11 @@ export default function ProgressPage() {
     subject,
     avg: Math.round(total / count),
     grade: gradeFromPercentage(Math.round(total / count)),
+    trend: gradedAssessments
+      .filter((a) => a.subject === subject)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(-4)
+      .map((a) => Math.round((a.results.find((r) => r.studentId === student.id)!.marks / a.maxMarks) * 100)),
   })).sort((a, b) => b.avg - a.avg)
 
   const overallAvg = subjectAverages.length > 0
@@ -79,11 +85,12 @@ export default function ProgressPage() {
             <p className="text-[13px] text-white/30 text-center py-8">No graded assessments yet.</p>
           ) : (
             <div className="space-y-3">
-              {subjectAverages.map(({ subject, avg, grade }) => (
+              {subjectAverages.map(({ subject, avg, grade, trend }) => (
                 <div key={subject}>
-                  <div className="flex justify-between text-[12px] mb-1.5">
+                  <div className="flex justify-between items-center text-[12px] mb-1.5">
                     <span className="text-white/70 font-medium">{subject}</span>
                     <span className="flex items-center gap-2">
+                      {trend.length >= 2 && <Sparkline values={trend} color={barColor(avg)} />}
                       <span className={`font-bold ${getGradeColor(grade)}`}>{grade}</span>
                       <span className="text-white/40">{avg}%</span>
                     </span>

@@ -1,16 +1,24 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { toast } from '@/components/ui/Toaster'
-import { Save, Building2, CreditCard, Bell, Sparkles } from 'lucide-react'
+import { Save, Building2, CreditCard, Bell, Sparkles, Upload } from 'lucide-react'
 
 export default function SystemSettingsPage() {
   const { settings, updateSettings } = useAppStore()
   const [form, setForm] = useState(settings)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   const handleSave = () => {
     updateSettings(form)
     toast.success('Settings saved', 'Platform-wide settings have been updated.')
+  }
+
+  const handleLogoSelect = (file: File | undefined) => {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setForm((f) => ({ ...f, logo: reader.result as string }))
+    reader.readAsDataURL(file)
   }
 
   const field = (label: string, value: string | number, onChange: (v: string) => void, type = 'text') => (
@@ -37,6 +45,18 @@ export default function SystemSettingsPage() {
 
       <div className="plato-card p-5 space-y-4">
         <h3 className="text-[13px] font-semibold text-white/60 uppercase tracking-widest flex items-center gap-2"><Building2 size={14} /> Company Details</h3>
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            {form.logo ? <img src={form.logo} alt="Logo" className="w-full h-full object-cover" /> : <Building2 size={22} className="text-white/20" />}
+          </div>
+          <div>
+            <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoSelect(e.target.files?.[0])} />
+            <button type="button" className="btn-ghost border border-dark-border text-xs" onClick={() => logoInputRef.current?.click()}>
+              <Upload size={12} /> Upload Logo
+            </button>
+            <p className="text-[10px] text-white/30 mt-1.5">PNG or JPG, shown on receipts and the login page.</p>
+          </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {field('Company Name', form.companyName, (v) => setForm((f) => ({ ...f, companyName: v })))}
           {field('Website', form.website, (v) => setForm((f) => ({ ...f, website: v })))}
@@ -63,6 +83,14 @@ export default function SystemSettingsPage() {
             <label className="block text-[11px] font-semibold text-white/40 mb-1.5 uppercase tracking-wider">Academic Year</label>
             <select className="plato-input" value={form.academicYear} onChange={(e) => setForm((f) => ({ ...f, academicYear: e.target.value }))}>
               {academicYearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-white/40 mb-1.5 uppercase tracking-wider">Current Term</label>
+            <select className="plato-input" value={form.currentTerm || 'Term 1'} onChange={(e) => setForm((f) => ({ ...f, currentTerm: e.target.value }))}>
+              <option>Term 1</option>
+              <option>Term 2</option>
+              <option>Term 3</option>
             </select>
           </div>
           {field('Timezone', form.timezone, (v) => setForm((f) => ({ ...f, timezone: v })))}

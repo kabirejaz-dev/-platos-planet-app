@@ -4,7 +4,8 @@ import { StatCard } from '@/components/ui/StatCard'
 import { Avatar } from '@/components/ui/Avatar'
 import { gradeFromPercentage, getGradeColor } from '@/lib/utils'
 import { Link } from 'react-router-dom'
-import { BookOpen, BarChart3, PenTool, ShieldCheck, ArrowRight } from 'lucide-react'
+import { formatDate } from '@/lib/utils'
+import { BookOpen, BarChart3, PenTool, ShieldCheck, ArrowRight, CalendarDays } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { InsightsStrip, type Insight } from '@/components/ui/InsightsStrip'
 
@@ -15,7 +16,7 @@ const SUBJECT_CODE: Record<string, string> = {
 }
 
 export default function CoordinatorDashboard() {
-  const { assessments, batches, students, teachers, homework, interventions: interventionRecords, teacherReviews } = useAppStore()
+  const { assessments, batches, students, teachers, homework, interventions: interventionRecords, teacherReviews, syllabusPlans } = useAppStore()
 
   const completedAssessments = assessments.filter((a) => a.status === 'graded')
   const upcomingAssessments = assessments.filter((a) => a.status === 'upcoming')
@@ -69,6 +70,27 @@ export default function CoordinatorDashboard() {
   const reviewCountByTeacher = teachers.map((t) => ({ teacher: t, count: teacherReviews.filter((r) => r.teacherId === t.id).length }))
   const unreviewedTeacher = reviewCountByTeacher.find((r) => r.count === 0)
 
+  // This-week-at-a-glance
+  const weekAhead = new Date(); weekAhead.setDate(weekAhead.getDate() + 7)
+  const assessmentsDueThisWeek = upcomingAssessments
+    .filter((a) => new Date(a.date) <= weekAhead)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+  const openInterventions = interventionRecords.filter((i) => i.status !== 'resolved')
+  const highPriorityInterventions = openInterventions.filter((i) => i.status === 'active')
+
+  const pendingReviews = teacherReviews.filter((r) => r.status === 'draft')
+  const oldestPendingReview = [...pendingReviews].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
+  const oldestReviewDaysOpen = oldestPendingReview ? Math.floor((Date.now() - new Date(oldestPendingReview.date).getTime()) / 86400000) : 0
+  const oldestReviewTeacher = oldestPendingReview ? teachers.find((t) => t.id === oldestPendingReview.teacherId) : null
+
+  const syllabusCoverage = syllabusPlans.length > 0
+    ? Math.round(
+        syllabusPlans.reduce((sum, p) => sum + (p.topics.filter((t) => t.status === 'completed').length / p.topics.length) * 100, 0) /
+        syllabusPlans.length
+      )
+    : null
+
   const insights: Insight[] = []
   if (staleInterventions.length > 0) insights.push({ icon: '🔴', text: <><strong>{staleInterventions.length}</strong> open intervention{staleInterventions.length === 1 ? '' : 's'} have no activity for 5+ days</> })
   if (biggestDrop) insights.push({ icon: '📊', text: <><strong>{biggestDrop.subject}</strong> average score dropped {biggestDrop.drop}% vs the previous assessment</>, tone: 'purple' })
@@ -79,6 +101,48 @@ export default function CoordinatorDashboard() {
       <PageHeader title="Academic Excellence Centre" subtitle="Monitor curriculum, assessments, and student performance" />
 
       <InsightsStrip insights={insights} />
+
+      {/* This week at a glance */}
+      <div className="plato-card p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <CalendarDays size={16} className="text-[#4D7CFF]" />
+          <h3 className="text-sm font-semibold text-foreground">This Week at a Glance</h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Assessments due</p>
+            {assessmentsDueThisWeek.length > 0 ? (
+              <p className="text-sm font-semibold text-foreground">
+                {assessmentsDueThisWeek.length} <span className="text-muted-foreground font-normal">({assessmentsDueThisWeek.map((a) => formatDate(a.date)).join(', ')})</span>
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">None this week</p>
+            )}
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Open interventions</p>
+            <p className="text-sm font-semibold text-foreground">
+              {openInterventions.length} {highPriorityInterventions.length > 0 && <span className="text-[#FF6B7A] font-normal">({highPriorityInterventions.length} high priority)</span>}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Pending reviews</p>
+            {pendingReviews.length > 0 ? (
+              <p className="text-sm font-semibold text-foreground">
+                {pendingReviews.length} {oldestReviewTeacher && oldestReviewDaysOpen >= 5 && (
+                  <span className="text-[#FBBF24] font-normal">({oldestReviewTeacher.name} — overdue)</span>
+                )}
+              </p>
+            ) : (
+              <p className="text-sm font-semibold text-[#00FFA3]">All caught up ✓</p>
+            )}
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Syllabus coverage</p>
+            <p className="text-sm font-semibold text-foreground">{syllabusCoverage !== null ? `${syllabusCoverage}% avg across batches` : 'No plans yet'}</p>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Assessments Graded" value={completedAssessments.length} icon={<PenTool size={18} />} color="#7B61FF" />

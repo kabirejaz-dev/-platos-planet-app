@@ -74,7 +74,7 @@ export default function LoginPage() {
   const [showForgotPw, setShowForgotPw] = useState(false)
   const [justFilled, setJustFilled] = useState(false)
   const rolesCount = useCountUp(9)
-  const programmesCount = useCountUp(8)
+  const programmesCount = useCountUp(10)
 
   useEffect(() => {
     const remembered = localStorage.getItem(REMEMBERED_EMAIL_KEY)

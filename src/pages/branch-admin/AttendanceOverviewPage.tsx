@@ -2,16 +2,52 @@ import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Avatar } from '@/components/ui/Avatar'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { generateId } from '@/lib/utils'
+import { toast } from '@/components/ui/Toaster'
+import { ChevronDown, ChevronUp, ClipboardCheck, Save, X } from 'lucide-react'
+
+const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export default function AttendanceOverviewPage() {
-  const { currentUser, batches, students, attendance } = useAppStore()
+  const { currentUser, batches, students, attendance, bulkAddAttendance } = useAppStore()
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [expandedBatch, setExpandedBatch] = useState<string | null>(null)
+  const [quickMarkOpen, setQuickMarkOpen] = useState(false)
+  const [quickMarks, setQuickMarks] = useState<Record<string, 'present' | 'absent'>>({})
 
   const branchBatches = batches.filter((b) =>
     currentUser?.branchId ? b.branchId === currentUser.branchId : true
   ).filter((b) => b.status === 'active')
+
+  const today = new Date().toISOString().split('T')[0]
+  const todayAbbr = DAY_ABBR[new Date().getDay()]
+  const todaysBatches = branchBatches.filter((b) => b.schedule.some((s) => s.day === todayAbbr))
+  const todaysStudents = students.filter((s) => todaysBatches.some((b) => b.studentIds.includes(s.id)))
+
+  const quickMarkStatus = (studentId: string): 'present' | 'absent' => {
+    if (quickMarks[studentId]) return quickMarks[studentId]
+    const existing = attendance.find((a) => a.studentId === studentId && a.date === today && todaysBatches.some((b) => b.id === a.batchId))
+    return existing?.status === 'absent' ? 'absent' : 'present'
+  }
+
+  const saveQuickMark = () => {
+    const records = todaysStudents.map((s) => {
+      const batch = todaysBatches.find((b) => b.studentIds.includes(s.id))!
+      return {
+        id: `att-${generateId()}`,
+        batchId: batch.id,
+        studentId: s.id,
+        date: today,
+        status: quickMarkStatus(s.id),
+        markedBy: currentUser?.id || '',
+      }
+    })
+    bulkAddAttendance(records)
+    const absentCount = records.filter((r) => r.status === 'absent').length
+    toast.success('Attendance saved', `${records.length} students recorded${absentCount > 0 ? ` · ${absentCount} absent` : ''}`)
+    setQuickMarkOpen(false)
+    setQuickMarks({})
+  }
 
   const dayAttendance = attendance.filter((a) => a.date === selectedDate)
 
@@ -51,9 +87,57 @@ export default function AttendanceOverviewPage() {
         title="Attendance Overview"
         subtitle={`${overallRate}% attendance on ${new Date(selectedDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}`}
         actions={
-          <input type="date" className="plato-input text-[13px]" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} max={new Date().toISOString().split('T')[0]} />
+          <div className="flex items-center gap-2">
+            <button className="btn-primary" onClick={() => setQuickMarkOpen(true)} disabled={todaysBatches.length === 0}>
+              <ClipboardCheck size={14} /> Quick Mark Today
+            </button>
+            <input type="date" className="plato-input text-[13px]" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} max={new Date().toISOString().split('T')[0]} />
+          </div>
         }
       />
+
+      {quickMarkOpen && (
+        <div className="plato-card p-5 space-y-4" style={{ border: '1px solid rgba(251,191,36,0.3)' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-[14px] font-bold text-white/90">Quick Mark Today — {todaysBatches.map((b) => b.name).join(', ')}</h3>
+              <p className="text-[12px] text-white/40">{todaysStudents.length} students across {todaysBatches.length} class{todaysBatches.length === 1 ? '' : 'es'} today</p>
+            </div>
+            <button onClick={() => { setQuickMarkOpen(false); setQuickMarks({}) }} className="text-white/30 hover:text-white/70"><X size={18} /></button>
+          </div>
+          <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto">
+            {todaysStudents.map((student) => {
+              const status = quickMarkStatus(student.id)
+              return (
+                <div key={student.id} className="flex items-center gap-3 py-2.5">
+                  <Avatar name={student.name} size="xs" />
+                  <span className="flex-1 text-[13px] text-white/75">{student.name}</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setQuickMarks((m) => ({ ...m, [student.id]: 'present' }))}
+                      className="px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
+                      style={status === 'present' ? { background: '#00FFA3', color: '#0A0E1A' } : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.4)' }}
+                    >
+                      Present
+                    </button>
+                    <button
+                      onClick={() => setQuickMarks((m) => ({ ...m, [student.id]: 'absent' }))}
+                      className="px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
+                      style={status === 'absent' ? { background: '#FF6B7A', color: '#0A0E1A' } : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.4)' }}
+                    >
+                      Absent
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+            {todaysStudents.length === 0 && <p className="text-[13px] text-white/30 text-center py-6">No classes scheduled today.</p>}
+          </div>
+          <button className="btn-primary w-full justify-center" onClick={saveQuickMark} disabled={todaysStudents.length === 0}>
+            <Save size={14} /> Save Attendance
+          </button>
+        </div>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

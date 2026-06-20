@@ -264,6 +264,8 @@ export interface Lead {
   followUpDate?: string;
   trialDate?: string;
   trialTimeSlot?: string;
+  trialRoom?: string;
+  trialTeacherId?: string;
   dateOfBirth?: string;
   nationality?: string;
   referrerName?: string;
@@ -494,6 +496,8 @@ export interface ClassNote {
   subject: Subject;
   fileType: 'pdf' | 'doc' | 'slides' | 'video' | 'link';
   uploadedAt: string;
+  fileName?: string;
+  fileDataUrl?: string;
 }
 
 // ── Lesson Log ────────────────────────────────────────────────────────────────

@@ -49,6 +49,9 @@ export default function ResourcesPage() {
                   <p className="text-[11px] text-white/35 mt-0.5">{batch?.name}</p>
                   {note.description && <p className="text-[11px] text-white/40 mt-1.5">{note.description}</p>}
                   <p className="text-[10px] text-white/25 mt-2">{teacher?.name} · {formatDate(note.uploadedAt)}</p>
+                  {note.fileDataUrl && (
+                    <a href={note.fileDataUrl} download={note.fileName} className="text-[11px] text-[#4D7CFF] hover:underline mt-1.5 inline-block">Download {note.fileName}</a>
+                  )}
                 </div>
               </div>
             </div>
