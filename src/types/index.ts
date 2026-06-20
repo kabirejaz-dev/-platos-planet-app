@@ -102,6 +102,8 @@ export interface Student {
   dateOfBirth?: string;
   nationality?: string;
   gender?: 'Male' | 'Female' | 'Other';
+  previousSchool?: string;
+  notes?: string;
 }
 
 export type PlanetLevel = 'Mercury' | 'Venus' | 'Earth' | 'Mars' | 'Jupiter' | 'Saturn' | 'Neptune' | 'Pluto';
@@ -267,6 +269,7 @@ export interface Lead {
   referrerName?: string;
   createdAt: string;
   convertedAt?: string;
+  callLog?: { date: string; outcome: string; notes?: string }[];
 }
 
 // ── Finance ───────────────────────────────────────────────────────────────────
@@ -579,6 +582,8 @@ export interface Expense {
   amount: number;
   date: string;
   approvedBy?: string;
+  vendor?: string;
+  receiptFileName?: string;
 }
 
 // ── Programme (enrichment / test-prep) ───────────────────────────────────────

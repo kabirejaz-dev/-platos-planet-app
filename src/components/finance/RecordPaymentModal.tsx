@@ -16,8 +16,6 @@ const METHODS = [
   { value: 'online', label: 'Online Payment' },
 ] as const
 
-const REFERENCE_METHODS = new Set(['bank_transfer', 'cheque', 'online'])
-
 function todayStr() {
   return new Date().toISOString().split('T')[0]
 }
@@ -123,12 +121,10 @@ export function RecordPaymentModal({ open, onClose, invoiceId, defaultAmount }: 
           </select>
         </div>
 
-        {REFERENCE_METHODS.has(method) && (
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Reference Number</label>
-            <input className="plato-input" placeholder="Bank reference / cheque number" value={reference} onChange={(e) => setReference(e.target.value)} />
-          </div>
-        )}
+        <div>
+          <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Reference / Cheque No.</label>
+          <input className="plato-input" placeholder="Cheque #, transfer ref, or leave blank" value={reference} onChange={(e) => setReference(e.target.value)} />
+        </div>
 
         <div>
           <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Notes</label>

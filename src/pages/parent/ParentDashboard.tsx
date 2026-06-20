@@ -143,9 +143,9 @@ export default function ParentDashboard() {
                   <td className="text-sm text-muted-foreground">{formatDate(inv.dueDate)}</td>
                   <td>
                     {inv.status !== 'paid' && (
-                      <button className="text-xs px-3 py-1.5 rounded-lg bg-[#4D7CFF]/10 text-[#4D7CFF] hover:bg-[#4D7CFF]/20 transition-colors">
+                      <Link to="/parent/fees" className="text-xs px-3 py-1.5 rounded-lg bg-[#4D7CFF]/10 text-[#4D7CFF] hover:bg-[#4D7CFF]/20 transition-colors inline-block">
                         Pay Online
-                      </button>
+                      </Link>
                     )}
                   </td>
                 </tr>

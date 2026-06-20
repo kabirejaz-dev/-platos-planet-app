@@ -2,14 +2,49 @@ import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { DemoBadge } from '@/components/ui/DemoBadge'
-import { daysUntil } from '@/lib/utils'
-import { Calendar, Clock, FileText, AlertCircle } from 'lucide-react'
+import { Modal } from '@/components/ui/Modal'
+import { FieldError, fieldInputClass } from '@/components/ui/FormField'
+import { daysUntil, generateId } from '@/lib/utils'
+import { assessmentSchema, getFieldErrors } from '@/lib/schemas'
+import { toast } from '@/components/ui/Toaster'
+import { Calendar, Clock, FileText, AlertCircle, Plus } from 'lucide-react'
+
+const emptyForm = { batchId: '', teacherId: '', title: '', type: 'quiz' as 'quiz' | 'test' | 'mock_exam' | 'assignment', date: '', maxMarks: '100', duration: '60', topics: '' }
 
 export default function AssessmentsPage() {
-  const { assessments, batches, teachers } = useAppStore()
+  const { assessments, batches, teachers, addAssessment } = useAppStore()
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'graded'>('upcoming')
+  const [showModal, setShowModal] = useState(false)
+  const [form, setForm] = useState(emptyForm)
+  const [errors, setErrors] = useState<Partial<Record<'title' | 'date' | 'maxMarks' | 'duration', string>>>({})
 
   const today = new Date().toISOString().split('T')[0]
+
+  const closeModal = () => { setShowModal(false); setForm(emptyForm); setErrors({}) }
+
+  const handleCreate = () => {
+    const fieldErrors = getFieldErrors(assessmentSchema, form)
+    if (Object.keys(fieldErrors).length > 0) { setErrors(fieldErrors); return }
+    if (!form.batchId || !form.teacherId) return
+    const batch = batches.find((b) => b.id === form.batchId)
+    addAssessment({
+      id: `as-${generateId()}`,
+      batchId: form.batchId,
+      teacherId: form.teacherId,
+      title: form.title,
+      subject: batch?.subject || 'Physics',
+      curriculum: batch?.curriculum || 'IGCSE',
+      type: form.type,
+      date: form.date,
+      maxMarks: Number(form.maxMarks),
+      duration: Number(form.duration),
+      status: new Date(form.date) > new Date() ? 'upcoming' : 'completed',
+      syllabusTopics: form.topics.split(',').map((t) => t.trim()).filter(Boolean),
+      results: [],
+    })
+    toast.success('Assessment created', form.title)
+    closeModal()
+  }
 
   const filtered = assessments.filter((a) => {
     if (filter === 'upcoming') return a.date >= today && a.status === 'upcoming'
@@ -27,7 +62,12 @@ export default function AssessmentsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Assessments" subtitle={`${upcoming.length} upcoming · ${thisWeek.length} this week`} badge={<DemoBadge />} />
+      <PageHeader
+        title="Assessments"
+        subtitle={`${upcoming.length} upcoming · ${thisWeek.length} this week`}
+        badge={<DemoBadge />}
+        actions={<button className="btn-primary" onClick={() => setShowModal(true)}><Plus size={15} /> Create Assessment</button>}
+      />
 
       <div className="grid grid-cols-3 gap-3">
         <div className="plato-card p-4 text-center">
@@ -100,6 +140,70 @@ export default function AssessmentsPage() {
           </div>
         )}
       </div>
+
+      <Modal open={showModal} onClose={closeModal} title="Create Assessment">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Batch</label>
+            <select className="plato-input" value={form.batchId} onChange={(e) => setForm((f) => ({ ...f, batchId: e.target.value }))}>
+              <option value="">— Select Batch —</option>
+              {batches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Teacher</label>
+            <select className="plato-input" value={form.teacherId} onChange={(e) => setForm((f) => ({ ...f, teacherId: e.target.value }))}>
+              <option value="">— Select Teacher —</option>
+              {teachers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Title</label>
+            <input className={fieldInputClass(errors.title)} placeholder="e.g. IGCSE Physics Mock Paper 2" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
+            <FieldError message={errors.title} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Type</label>
+            <select className="plato-input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as typeof form.type }))}>
+              <option value="quiz">Quiz</option>
+              <option value="test">Test</option>
+              <option value="mock_exam">Mock Exam</option>
+              <option value="assignment">Assignment</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Date</label>
+              <input type="date" className={fieldInputClass(errors.date)} value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
+              <FieldError message={errors.date} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Max Marks</label>
+              <input type="number" className={fieldInputClass(errors.maxMarks)} placeholder="100" value={form.maxMarks} onChange={(e) => setForm((f) => ({ ...f, maxMarks: e.target.value }))} />
+              <FieldError message={errors.maxMarks} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Duration (min)</label>
+              <input type="number" className={fieldInputClass(errors.duration)} placeholder="60" value={form.duration} onChange={(e) => setForm((f) => ({ ...f, duration: e.target.value }))} />
+              <FieldError message={errors.duration} />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Syllabus Topics (comma separated)</label>
+            <input className="plato-input" placeholder="Forces, Motion, Energy" value={form.topics} onChange={(e) => setForm((f) => ({ ...f, topics: e.target.value }))} />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button className="btn-ghost flex-1 justify-center border border-dark-border" onClick={closeModal}>Cancel</button>
+            <button className="btn-primary flex-1 justify-center" onClick={handleCreate} disabled={!form.batchId || !form.teacherId || !form.title || !form.date}>Create</button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

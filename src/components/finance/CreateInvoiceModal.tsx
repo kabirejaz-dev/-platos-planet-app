@@ -7,9 +7,11 @@ import { formatCurrency, generateId, formatDate } from '@/lib/utils'
 import { formatAedOnBlur, parseAedOnFocus, aedNumber, formatDateUAE } from '@/lib/validation'
 import { toast } from '@/components/ui/Toaster'
 import { FileText } from 'lucide-react'
-import type { Curriculum, PaymentInstallment } from '@/types'
+import type { Curriculum, ProgrammeType, PaymentInstallment } from '@/types'
 
 const CURRICULA: Curriculum[] = ['IGCSE', 'A-Level', 'CBSE', 'IB', 'American']
+const PROGRAMME_TYPES: ProgrammeType[] = ['NEET-JEE', 'Robotics', 'Brainobrain', 'Oratory', 'IELTS', 'SAT', 'Languages']
+const PROGRAMME_LABEL: Record<string, string> = { 'NEET-JEE': 'NEET/IIT-JEE', SAT: 'SATs' }
 
 function todayStr() {
   return new Date().toISOString().split('T')[0]
@@ -30,7 +32,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
 
   const [studentId, setStudentId] = useState('')
   const [branchOverride, setBranchOverride] = useState('')
-  const [programmeOverride, setProgrammeOverride] = useState<Curriculum | ''>('')
+  const [programmeOverride, setProgrammeOverride] = useState('')
   const [invoiceDate, setInvoiceDate] = useState(todayStr())
   const [dueDate, setDueDate] = useState(plusDays(30))
   const [description, setDescription] = useState('')
@@ -194,9 +196,14 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Programme</label>
-              <select className="plato-input" value={programme} onChange={(e) => setProgrammeOverride(e.target.value as Curriculum)} disabled={!student}>
+              <select className="plato-input" value={programme} onChange={(e) => setProgrammeOverride(e.target.value)} disabled={!student}>
                 <option value="">— Select Programme —</option>
-                {CURRICULA.map((c) => <option key={c} value={c}>{c}</option>)}
+                <optgroup label="Curriculum">
+                  {CURRICULA.map((c) => <option key={c} value={c}>{c}</option>)}
+                </optgroup>
+                <optgroup label="Enrichment Programme">
+                  {PROGRAMME_TYPES.map((p) => <option key={p} value={p}>{PROGRAMME_LABEL[p] || p}</option>)}
+                </optgroup>
               </select>
             </div>
           </div>

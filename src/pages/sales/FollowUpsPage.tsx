@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { DemoBadge } from '@/components/ui/DemoBadge'
+import { Modal } from '@/components/ui/Modal'
+import { RequiredMark, RequiredFieldsNote } from '@/components/ui/FormField'
 import { formatDate } from '@/lib/utils'
-import { Phone, MessageSquare, Calendar, CheckCircle2, AlertCircle, Clock } from 'lucide-react'
+import { Phone, MessageSquare, Calendar, CheckCircle2, AlertCircle, Clock, PhoneCall } from 'lucide-react'
 import { toast } from '@/components/ui/Toaster'
-import type { Lead } from '@/types'
+import type { Lead, LeadStatus } from '@/types'
 
 const SOURCE_LABEL: Record<Lead['source'], string> = {
   website: 'Website',
@@ -16,9 +18,20 @@ const SOURCE_LABEL: Record<Lead['source'], string> = {
   whatsapp: 'WhatsApp',
 }
 
+const STATUS_LABEL: Record<LeadStatus, string> = {
+  new: 'New',
+  contacted: 'Contacted',
+  trial_scheduled: 'Trial Scheduled',
+  trial_done: 'Trial Done',
+  enrolled: 'Enrolled',
+  lost: 'Lost',
+}
+
 export default function FollowUpsPage() {
   const { leads, updateLead } = useAppStore()
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
+  const [logLeadId, setLogLeadId] = useState<string | null>(null)
+  const [logForm, setLogForm] = useState({ outcome: '', status: 'contacted' as LeadStatus, followUpDate: '', notes: '' })
 
   const dueFollowUps = leads
     .filter((l) =>
@@ -39,6 +52,29 @@ export default function FollowUpsPage() {
     setCompletedIds((s) => new Set([...s, lead.id]))
     updateLead(lead.id, { status: lead.status === 'new' ? 'contacted' : lead.status })
     toast.success('Follow-up completed', `${lead.parentName} · ${lead.studentName}`)
+  }
+
+  const logLead = leads.find((l) => l.id === logLeadId)
+
+  const openLogCall = (lead: Lead) => {
+    setLogForm({ outcome: '', status: lead.status, followUpDate: '', notes: '' })
+    setLogLeadId(lead.id)
+  }
+
+  const closeLogCall = () => setLogLeadId(null)
+
+  const saveLogCall = () => {
+    if (!logLead || !logForm.outcome.trim()) return
+    const entry = { date: new Date().toISOString(), outcome: logForm.outcome.trim(), notes: logForm.notes.trim() || undefined }
+    updateLead(logLead.id, {
+      status: logForm.status,
+      followUpDate: logForm.followUpDate || undefined,
+      notes: logForm.notes.trim() ? `${logLead.notes ? logLead.notes + '\n' : ''}${formatDate(todayStr)}: ${logForm.notes.trim()}` : logLead.notes,
+      callLog: [...(logLead.callLog || []), entry],
+    })
+    setCompletedIds((s) => new Set([...s, logLead.id]))
+    toast.success('Call logged', `${logLead.parentName} · ${STATUS_LABEL[logForm.status]}`)
+    closeLogCall()
   }
 
   const FollowUpCard = ({ lead }: { lead: Lead }) => {
@@ -96,6 +132,12 @@ export default function FollowUpsPage() {
           >
             <MessageSquare size={13} /> WhatsApp
           </a>
+          <button
+            className="btn-ghost flex-1 justify-center text-[12px]"
+            onClick={() => openLogCall(lead)}
+          >
+            <PhoneCall size={13} /> Log Call
+          </button>
           <button
             className="btn-primary flex-1 justify-center text-[12px]"
             onClick={() => markDone(lead)}
@@ -184,6 +226,41 @@ export default function FollowUpsPage() {
           </div>
         </div>
       )}
+
+      <Modal open={Boolean(logLead)} onClose={closeLogCall} title={logLead ? `Log Call — ${logLead.parentName}` : 'Log Call'} isDirty={Boolean(logForm.outcome || logForm.notes)}>
+        {logLead && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Outcome<RequiredMark /></label>
+              <input className="plato-input" placeholder="e.g. Spoke to parent, interested in trial" value={logForm.outcome} onChange={(e) => setLogForm((f) => ({ ...f, outcome: e.target.value }))} />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Update Status</label>
+              <select className="plato-input" value={logForm.status} onChange={(e) => setLogForm((f) => ({ ...f, status: e.target.value as LeadStatus }))}>
+                {Object.entries(STATUS_LABEL).map(([s, label]) => <option key={s} value={s}>{label}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Next Follow-up Date (optional)</label>
+              <input type="date" className="plato-input" value={logForm.followUpDate} onChange={(e) => setLogForm((f) => ({ ...f, followUpDate: e.target.value }))} />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Notes (optional)</label>
+              <textarea className="plato-input min-h-[70px]" placeholder="Additional details about the call…" value={logForm.notes} onChange={(e) => setLogForm((f) => ({ ...f, notes: e.target.value }))} />
+            </div>
+
+            <RequiredFieldsNote />
+
+            <div className="flex gap-3 pt-2">
+              <button className="btn-ghost flex-1 justify-center border border-dark-border min-h-[44px]" onClick={closeLogCall}>Cancel</button>
+              <button className="btn-primary flex-1 justify-center min-h-[44px]" onClick={saveLogCall} disabled={!logForm.outcome.trim()}>Save Outcome</button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

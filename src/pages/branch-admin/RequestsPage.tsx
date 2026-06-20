@@ -35,7 +35,7 @@ export default function RequestsPage() {
 
   const handleDecline = (req: BranchRequest) => {
     updateBranchRequest(req.id, { status: 'rejected', resolvedAt: new Date().toISOString(), declineReason: declineReason.trim() || undefined })
-    toast.success('Request declined', req.title)
+    toast.error('Request rejected', req.title)
     setDeclining(null)
     setDeclineReason('')
   }

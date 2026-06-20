@@ -46,6 +46,7 @@ export const users: User[] = [
   { id: 'u-pr-003', name: 'Parent 10', email: 'parent10@example.com', phone: '+971 50 401 5001', role: 'parent', isActive: true, createdAt: '2022-09-01' },
   { id: 'u-pr-004', name: 'Parent 7', email: 'parent7@example.com', phone: '+971 55 502 6002', role: 'parent', isActive: true, createdAt: '2023-01-01' },
   { id: 'u-pr-005', name: 'Parent 4', email: 'parent4@example.com', phone: '+971 52 603 7003', role: 'parent', isActive: true, createdAt: '2023-09-01' },
+  { id: 'u-pr-009', name: 'Parent 9', email: 'parent9@example.com', phone: '+971 56 009 1009', role: 'parent', isActive: true, createdAt: '2022-01-01' },
   { id: 'u-st-001', name: 'Zaid Al Farsi', email: 'zaid@student.platosplanet.ae', role: 'student', branchId: 'br-001', isActive: true, createdAt: '2021-09-01' },
   { id: 'u-st-002', name: 'Student 2', email: 'student2@student.platosplanet.ae', role: 'student', branchId: 'br-001', isActive: true, createdAt: '2022-01-01' },
   { id: 'u-st-003', name: 'Student 5', email: 'student5@student.platosplanet.ae', role: 'student', branchId: 'br-002', isActive: true, createdAt: '2022-01-01' },
@@ -82,6 +83,7 @@ export const parents: Parent[] = [
   { id: 'pr-006', name: 'Parent 12', email: 'parent12@example.com', phone: '+971 50 704 8004', userId: 'u-pr-006', studentIds: ['st-011'], branchId: 'br-001' },
   { id: 'pr-007', name: 'Parent 8', email: 'parent8@example.com', phone: '+971 55 805 9005', userId: 'u-pr-007', studentIds: ['st-012'], branchId: 'br-002' },
   { id: 'pr-008', name: 'Parent 6', email: 'parent6@example.com', phone: '+971 50 906 0006', userId: 'u-pr-008', studentIds: ['st-008', 'st-009'], branchId: 'br-002' },
+  { id: 'pr-009', name: 'Parent 9', email: 'parent9@example.com', phone: '+971 56 009 1009', userId: 'u-pr-009', studentIds: ['st-003'], branchId: 'br-002' },
 ];
 
 // ── Students ──────────────────────────────────────────────────────────────────
@@ -89,7 +91,7 @@ export const parents: Parent[] = [
 export const students: Student[] = [
   { id: 'st-001', userId: 'u-st-001', name: 'Zaid Al Farsi', email: 'zaid@student.platosplanet.ae', parentId: 'pr-001', branchId: 'br-001', curriculum: 'IGCSE', grade: 'Grade 10', enrollmentDate: '2021-09-01', status: 'active', xp: 3750, streak: 12, planet: 'Mars', subjects: ['Physics', 'Chemistry', 'Mathematics', 'Biology', 'English'], batchIds: ['ba-001', 'ba-003'], dateOfBirth: '2010-03-14', nationality: 'Emirati', gender: 'Male' },
   { id: 'st-002', userId: 'u-st-002', name: 'Student 2', email: 'student2@student.platosplanet.ae', parentId: 'pr-002', branchId: 'br-001', curriculum: 'A-Level', grade: 'Year 12', enrollmentDate: '2022-01-01', status: 'active', xp: 6200, streak: 21, planet: 'Saturn', subjects: ['Mathematics', 'Physics', 'Computer Science'], batchIds: ['ba-001', 'ba-002'] },
-  { id: 'st-003', userId: 'u-st-003', name: 'Student 5', email: 'student5@student.platosplanet.ae', branchId: 'br-002', curriculum: 'CBSE', grade: 'Class 11', enrollmentDate: '2022-01-01', status: 'active', xp: 1800, streak: 5, planet: 'Earth', subjects: ['Chemistry', 'Biology', 'Mathematics'], batchIds: ['ba-003', 'ba-004'] },
+  { id: 'st-003', userId: 'u-st-003', name: 'Student 5', email: 'student5@student.platosplanet.ae', parentId: 'pr-009', branchId: 'br-002', curriculum: 'CBSE', grade: 'Class 11', enrollmentDate: '2022-01-01', status: 'active', xp: 1800, streak: 5, planet: 'Earth', subjects: ['Chemistry', 'Biology', 'Mathematics'], batchIds: ['ba-003', 'ba-004'] },
   { id: 'st-004', userId: 'u-st-004', name: 'Student 9', email: 'student9@student.platosplanet.ae', branchId: 'br-001', curriculum: 'IGCSE', grade: 'Grade 9', enrollmentDate: '2023-09-01', status: 'active', xp: 720, streak: 8, planet: 'Venus', subjects: ['Mathematics', 'English', 'Biology'], batchIds: ['ba-001', 'ba-007'] },
   { id: 'st-005', userId: 'u-st-005', name: 'Student 10', email: 'student10@student.platosplanet.ae', parentId: 'pr-003', branchId: 'br-001', curriculum: 'A-Level', grade: 'Year 13', enrollmentDate: '2022-09-01', status: 'active', xp: 14200, streak: 34, planet: 'Neptune', subjects: ['Mathematics', 'Physics', 'Economics'], batchIds: ['ba-002', 'ba-006'] },
   { id: 'st-006', userId: 'u-st-006', name: 'Student 7', email: 'student7@student.platosplanet.ae', parentId: 'pr-004', branchId: 'br-002', curriculum: 'CBSE', grade: 'Class 12', enrollmentDate: '2023-01-01', status: 'active', xp: 5100, streak: 15, planet: 'Jupiter', subjects: ['Chemistry', 'Biology', 'Mathematics'], batchIds: ['ba-004', 'ba-008'] },
@@ -541,7 +543,7 @@ export const invoices: Invoice[] = [
     totalAmount: 3100, currency: 'AED', status: 'pending', dueDate: daysAgo(-3), issuedDate: daysAgo(5),
   },
   {
-    id: 'inv-003', invoiceNumber: 'INV-2024-003', studentId: 'st-003', parentId: 'pr-001', branchId: 'br-002',
+    id: 'inv-003', invoiceNumber: 'INV-2024-003', studentId: 'st-003', parentId: 'pr-009', branchId: 'br-002',
     items: [{ description: 'CBSE Mathematics — October 2024', amount: 1100, quantity: 1 }, { description: 'IGCSE Chemistry — October 2024', amount: 1200, quantity: 1 }],
     totalAmount: 2300, currency: 'AED', status: 'overdue', dueDate: daysAgo(10), issuedDate: daysAgo(20),
   },

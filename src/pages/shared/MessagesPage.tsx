@@ -8,10 +8,34 @@ import { generateId, formatDate, timeAgo } from '@/lib/utils'
 import { Send, Mail, Plus } from 'lucide-react'
 
 export default function MessagesPage() {
-  const { currentUser, messages, users, markMessageRead, addMessage } = useAppStore()
+  const { currentUser, messages, users, teachers, parents, students, batches, markMessageRead, addMessage } = useAppStore()
   const [showCompose, setShowCompose] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
   const [form, setForm] = useState({ to: '', subject: '', body: '' })
+
+  const recipientOptions = (() => {
+    if (!currentUser) return []
+    if (currentUser.role === 'teacher') {
+      const teacher = teachers.find((t) => t.userId === currentUser.id)
+      const myBatches = teacher ? batches.filter((b) => b.teacherId === teacher.id) : []
+      const myStudentIds = new Set(myBatches.flatMap((b) => b.studentIds))
+      const myParentIds = new Set(students.filter((s) => myStudentIds.has(s.id) && s.parentId).map((s) => s.parentId!))
+      const parentUserIds = parents.filter((p) => myParentIds.has(p.id)).map((p) => p.userId)
+      const staffUserIds = users.filter((u) => u.role === 'coordinator' || u.role === 'branch_admin').map((u) => u.id)
+      const allowedIds = new Set([...parentUserIds, ...staffUserIds])
+      return users.filter((u) => allowedIds.has(u.id))
+    }
+    if (currentUser.role === 'parent') {
+      const parent = parents.find((p) => p.userId === currentUser.id)
+      const myStudentIds = new Set(parent?.studentIds || [])
+      const myTeacherIds = new Set(batches.filter((b) => b.studentIds.some((id) => myStudentIds.has(id))).map((b) => b.teacherId))
+      const teacherUserIds = teachers.filter((t) => myTeacherIds.has(t.id)).map((t) => t.userId)
+      const staffUserIds = users.filter((u) => u.role === 'branch_admin').map((u) => u.id)
+      const allowedIds = new Set([...teacherUserIds, ...staffUserIds])
+      return users.filter((u) => allowedIds.has(u.id))
+    }
+    return users.filter((u) => u.id !== currentUser.id)
+  })()
 
   const myMessages = messages
     .filter((m) => m.toId === currentUser?.id || m.fromId === currentUser?.id)
@@ -154,13 +178,14 @@ export default function MessagesPage() {
       <Modal open={showCompose} onClose={() => setShowCompose(false)} title="New Message">
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">To (User ID or Email)</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">To</label>
             <select className="plato-input" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })}>
               <option value="">— Select recipient —</option>
-              {users.filter((u) => u.id !== currentUser?.id).map((u) => (
+              {recipientOptions.map((u) => (
                 <option key={u.id} value={u.id}>{u.name} ({u.role.replace('_', ' ')})</option>
               ))}
             </select>
+            {recipientOptions.length === 0 && <p className="text-[11px] text-amber-400/80 mt-1.5">No recipients available yet.</p>}
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Subject</label>

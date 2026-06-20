@@ -1,14 +1,46 @@
+import { useMemo, useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { toast } from '@/components/ui/Toaster'
-import { Receipt, FileCheck, Download } from 'lucide-react'
+import { Receipt, FileCheck, Download, AlertTriangle } from 'lucide-react'
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+function getQuarters(count: number) {
+  const now = new Date()
+  let year = now.getFullYear()
+  let q = Math.floor(now.getMonth() / 3)
+  const quarters: { key: string; label: string; start: string; end: string }[] = []
+  for (let i = 0; i < count; i++) {
+    const startMonth = q * 3
+    const start = new Date(year, startMonth, 1)
+    const end = new Date(year, startMonth + 3, 0)
+    quarters.push({
+      key: `${year}-Q${q + 1}`,
+      label: `Q${q + 1} ${MONTH_NAMES[startMonth]}–${MONTH_NAMES[startMonth + 2]} ${year}`,
+      start: start.toISOString().split('T')[0],
+      end: end.toISOString().split('T')[0],
+    })
+    q--
+    if (q < 0) { q = 3; year-- }
+  }
+  return quarters
+}
 
 export default function VATReportsPage() {
   const { invoices, settings } = useAppStore()
+  const quarters = useMemo(() => getQuarters(8), [])
+  const [periodKey, setPeriodKey] = useState(quarters[0].key)
+  const period = quarters.find((q) => q.key === periodKey) || quarters[0]
 
-  const paidInvoices = invoices.filter((i) => i.status === 'paid')
+  const paidInvoices = invoices
+    .filter((i) => i.status === 'paid')
+    .filter((i) => {
+      const d = i.paidDate || i.issuedDate
+      return d >= period.start && d <= period.end
+    })
   const grossRevenue = paidInvoices.reduce((s, i) => s + i.totalAmount, 0)
   const vatAmount = Math.round(grossRevenue * (settings.vatRate / (100 + settings.vatRate)))
   const netRevenue = grossRevenue - vatAmount
@@ -19,7 +51,14 @@ export default function VATReportsPage() {
         title="VAT Reports"
         subtitle="UAE VAT-compliant reports ready for submission to the FTA"
         badge={<DemoBadge />}
-        actions={<button className="btn-primary" onClick={() => toast.success('Report exported', 'VAT return PDF generated.')}><Download size={14} /> Export VAT Return</button>}
+        actions={
+          <div className="flex items-center gap-2">
+            <select className="plato-input text-sm" value={periodKey} onChange={(e) => setPeriodKey(e.target.value)}>
+              {quarters.map((q) => <option key={q.key} value={q.key}>{q.label}</option>)}
+            </select>
+            <button className="btn-primary" onClick={() => toast.success('Report exported', 'VAT return PDF generated.')}><Download size={14} /> Export VAT Return</button>
+          </div>
+        }
       />
 
       <div className="plato-card p-5 flex items-center gap-4">
@@ -27,10 +66,16 @@ export default function VATReportsPage() {
           <FileCheck size={20} />
         </div>
         <div>
-          <p className="text-[13px] font-semibold text-white/80">TRN: {settings.vatNumber || 'Not configured'}</p>
-          <p className="text-[12px] text-white/40">VAT Rate: {settings.vatRate}% · Filing period: {settings.academicYear}</p>
+          <p className="text-[13px] font-semibold text-white/80">TRN: {settings.vatNumber || '— not set —'}</p>
+          <p className="text-[12px] text-white/40">VAT Rate: {settings.vatRate}% · Filing period: {period.label}</p>
         </div>
       </div>
+
+      {!settings.vatNumber && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-[#FBBF24]/5 border border-[#FBBF24]/20 text-[12px] text-[#FBBF24]">
+          <AlertTriangle size={14} /> TRN not configured. Add it in Setup → School Info.
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-3">
         <div className="plato-card p-4 text-center">
@@ -49,7 +94,7 @@ export default function VATReportsPage() {
 
       <div className="plato-card overflow-hidden">
         <div className="p-4 border-b border-white/5">
-          <h3 className="text-[13px] font-semibold text-white/70">Taxable Supplies (Paid Invoices)</h3>
+          <h3 className="text-[13px] font-semibold text-white/70">Taxable Supplies (Paid Invoices) — {period.label}</h3>
         </div>
         <table className="w-full plato-table">
           <thead><tr><th>Invoice #</th><th>Date</th><th>Gross Amount</th><th>VAT ({settings.vatRate}%)</th><th>Net Amount</th></tr></thead>

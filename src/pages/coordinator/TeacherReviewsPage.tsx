@@ -136,7 +136,58 @@ export default function TeacherReviewsPage() {
             </div>
           )
         })}
+
+        {completed.length === 0 && drafts.length === 0 && (
+          <p className="text-center text-[13px] text-white/30 py-10">No reviews yet. Click "Write Review" to add one.</p>
+        )}
       </div>
+
+      <Modal open={showModal} onClose={() => setShowModal(false)} title="Write Review">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Teacher</label>
+            <select className="plato-input" value={form.teacherId} onChange={(e) => setForm((f) => ({ ...f, teacherId: e.target.value }))}>
+              {teachers.map((t) => <option key={t.id} value={t.id}>{t.name} — {t.subjects.join(', ')}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Review Type</label>
+            <select className="plato-input" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as typeof f.category }))}>
+              {Object.entries(CATEGORY_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Overall Rating</label>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button key={n} type="button" onClick={() => setForm((f) => ({ ...f, rating: n }))}>
+                  <Star size={22} fill={n <= form.rating ? '#FBBF24' : 'none'} className={n <= form.rating ? 'text-[#FBBF24]' : 'text-white/20'} />
+                </button>
+              ))}
+            </div>
+          </div>
+          {SLIDER_FIELDS.map((s) => (
+            <div key={s.key}>
+              <div className="flex justify-between text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">
+                <span>{s.label}</span><span>{form[s.key]}/5</span>
+              </div>
+              <input type="range" min={1} max={5} value={form[s.key]} onChange={(e) => setForm((f) => ({ ...f, [s.key]: Number(e.target.value) }))} className="w-full" />
+            </div>
+          ))}
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Strengths</label>
+            <textarea className="plato-input min-h-[70px]" placeholder="What did the teacher do well?" value={form.strengths} onChange={(e) => setForm((f) => ({ ...f, strengths: e.target.value }))} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Areas to Improve</label>
+            <textarea className="plato-input min-h-[70px]" placeholder="What could be improved?" value={form.improvements} onChange={(e) => setForm((f) => ({ ...f, improvements: e.target.value }))} />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button className="btn-ghost flex-1 justify-center border border-dark-border" onClick={() => setShowModal(false)}>Cancel</button>
+            <button className="btn-primary flex-1 justify-center" onClick={handleSave} disabled={!form.teacherId || form.rating === 0}>Save Review</button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

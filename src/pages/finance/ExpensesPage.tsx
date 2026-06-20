@@ -26,7 +26,15 @@ export default function ExpensesPage() {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState({ category: 'other' as Expense['category'], description: '', amount: '' })
+  const [form, setForm] = useState({
+    category: 'other' as Expense['category'],
+    branchId: currentUser?.branchId || branches[0]?.id || '',
+    date: new Date().toISOString().split('T')[0],
+    description: '',
+    vendor: '',
+    amount: '',
+    receiptFileName: '',
+  })
   const [errors, setErrors] = useState<Partial<Record<'description' | 'amount', string>>>({})
 
   const total = branchExpenses.reduce((s, e) => s + e.amount, 0)
@@ -34,20 +42,22 @@ export default function ExpensesPage() {
   branchExpenses.forEach((e) => { categoryMap[e.category] = (categoryMap[e.category] || 0) + e.amount })
 
   const handleAdd = () => {
-    if (!currentUser?.branchId) return
+    if (!form.branchId) return
     const fieldErrors = getFieldErrors(expenseSchema, form)
     if (Object.keys(fieldErrors).length > 0) { setErrors(fieldErrors); return }
     addExpense({
       id: `exp-${generateId()}`,
-      branchId: currentUser.branchId,
+      branchId: form.branchId,
       category: form.category,
       description: form.description,
+      vendor: form.vendor || undefined,
       amount: Number(form.amount),
-      date: new Date().toISOString().split('T')[0],
+      date: form.date,
+      receiptFileName: form.receiptFileName || undefined,
     })
     toast.success('Expense recorded', `${formatCurrency(Number(form.amount))} — ${form.description}`)
     setShowModal(false)
-    setForm({ category: 'other', description: '', amount: '' })
+    setForm({ category: 'other', branchId: currentUser?.branchId || branches[0]?.id || '', date: new Date().toISOString().split('T')[0], description: '', vendor: '', amount: '', receiptFileName: '' })
     setErrors({})
   }
 
@@ -86,7 +96,7 @@ export default function ExpensesPage() {
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${cfg.color}15`, color: cfg.color }}>{cfg.icon}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium text-white/80">{e.description}</p>
-                  <p className="text-[11px] text-white/30">{branch?.name} · {formatDate(e.date)}</p>
+                  <p className="text-[11px] text-white/30">{branch?.name} · {formatDate(e.date)}{e.vendor ? ` · ${e.vendor}` : ''}{e.receiptFileName ? ' · 📎 receipt' : ''}</p>
                 </div>
                 <p className="text-[13px] font-bold text-white/85">{formatCurrency(e.amount)}</p>
               </div>
@@ -109,15 +119,45 @@ export default function ExpensesPage() {
               {Object.entries(CATEGORY_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
             </select>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-white/40 mb-1.5 uppercase tracking-wider">Branch</label>
+              {currentUser?.branchId ? (
+                <input className="plato-input opacity-60" readOnly value={branches.find((b) => b.id === currentUser.branchId)?.name || ''} />
+              ) : (
+                <select className="plato-input" value={form.branchId} onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}>
+                  {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              )}
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-white/40 mb-1.5 uppercase tracking-wider">Date</label>
+              <input type="date" className="plato-input" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
+            </div>
+          </div>
           <div>
             <label className="block text-[11px] font-semibold text-white/40 mb-1.5 uppercase tracking-wider">Description</label>
             <input className={fieldInputClass(errors.description)} placeholder="e.g. Stationery and printed worksheets" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
             <FieldError message={errors.description} />
           </div>
           <div>
+            <label className="block text-[11px] font-semibold text-white/40 mb-1.5 uppercase tracking-wider">Vendor/Supplier</label>
+            <input className="plato-input" placeholder="e.g. DEWA, Al Futtaim, Transguard" value={form.vendor} onChange={(e) => setForm((f) => ({ ...f, vendor: e.target.value }))} />
+          </div>
+          <div>
             <label className="block text-[11px] font-semibold text-white/40 mb-1.5 uppercase tracking-wider">Amount (AED)</label>
             <input type="number" className={fieldInputClass(errors.amount)} placeholder="0" value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} />
             <FieldError message={errors.amount} />
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-white/40 mb-1.5 uppercase tracking-wider">Attach Receipt (optional)</label>
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              className="plato-input"
+              onChange={(e) => setForm((f) => ({ ...f, receiptFileName: e.target.files?.[0]?.name || '' }))}
+            />
+            {form.receiptFileName && <p className="text-[11px] text-[#00FFA3] mt-1">{form.receiptFileName}</p>}
           </div>
           <div className="flex gap-3 pt-2">
             <button className="btn-ghost flex-1 justify-center" onClick={() => { setShowModal(false); setErrors({}) }}>Cancel</button>

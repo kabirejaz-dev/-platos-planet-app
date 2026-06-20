@@ -6,7 +6,8 @@ import { Avatar } from '@/components/ui/Avatar'
 import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatDate, formatCurrency, generateId, getGradeColor } from '@/lib/utils'
 import { toast } from '@/components/ui/Toaster'
-import { Search, GraduationCap, Star, Filter, MessageSquare, ExternalLink, X } from 'lucide-react'
+import { Search, GraduationCap, Star, Filter, MessageSquare, ExternalLink, X, Plus } from 'lucide-react'
+import { AddStudentModal } from '@/components/branch-admin/AddStudentModal'
 import type { Student } from '@/types'
 
 const STATUS_COLORS: Record<Student['status'], { bg: string; color: string; label: string }> = {
@@ -28,6 +29,7 @@ export default function StudentsPage() {
   const [selected, setSelected] = useState<Student | null>(null)
   const [showMessage, setShowMessage] = useState(false)
   const [messageBody, setMessageBody] = useState('')
+  const [showAddStudent, setShowAddStudent] = useState(false)
 
   const branchStudents = students.filter((s) =>
     currentUser?.branchId ? s.branchId === currentUser.branchId : true
@@ -100,6 +102,11 @@ export default function StudentsPage() {
         title="Students"
         subtitle={`${branchStudents.length} enrolled students`}
         badge={<DemoBadge />}
+        actions={
+          <button className="btn-primary" onClick={() => setShowAddStudent(true)}>
+            <Plus size={15} /> Add Student
+          </button>
+        }
       />
 
       {/* Filters */}
@@ -397,6 +404,8 @@ export default function StudentsPage() {
           </div>
         </>
       )}
+
+      <AddStudentModal open={showAddStudent} onClose={() => setShowAddStudent(false)} />
     </div>
   )
 }

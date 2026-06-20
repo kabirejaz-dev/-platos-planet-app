@@ -3,13 +3,18 @@ import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
+import { Modal } from '@/components/ui/Modal'
 import { formatDate, gradeFromPercentage, getGradeColor } from '@/lib/utils'
+import { toast } from '@/components/ui/Toaster'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { Award } from 'lucide-react'
+import { Award, Eye, Pencil } from 'lucide-react'
 
 export default function ResultsPage() {
-  const { batches, students, assessments } = useAppStore()
+  const { batches, students, assessments, updateAssessment } = useAppStore()
   const [selectedBatch, setSelectedBatch] = useState('all')
+  const [viewingId, setViewingId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [marks, setMarks] = useState<Record<string, string>>({})
 
   const activeBatches = batches.filter((b) => b.status === 'active')
   const gradedAssessments = assessments.filter((a) => a.status === 'graded' && a.results.length > 0)
@@ -42,6 +47,30 @@ export default function ResultsPage() {
   const rankings = Object.entries(studentScores)
     .map(([id, { total, count, name }]) => ({ id, name, avg: Math.round(total / count), grade: gradeFromPercentage(Math.round(total / count)) }))
     .sort((a, b) => b.avg - a.avg)
+
+  const viewing = assessments.find((a) => a.id === viewingId)
+  const editing = assessments.find((a) => a.id === editingId)
+
+  const openEdit = (id: string) => {
+    const a = assessments.find((x) => x.id === id)
+    if (!a) return
+    const seed: Record<string, string> = {}
+    a.results.forEach((r) => { seed[r.studentId] = String(r.marks) })
+    setMarks(seed)
+    setEditingId(id)
+  }
+
+  const saveGrades = () => {
+    if (!editing) return
+    const results = editing.results.map((r) => {
+      const m = Number(marks[r.studentId] ?? r.marks)
+      const pct = Math.round((m / editing.maxMarks) * 100)
+      return { studentId: r.studentId, marks: m, percentage: pct, grade: gradeFromPercentage(pct) }
+    })
+    updateAssessment(editing.id, { results })
+    toast.success('Grades updated', editing.title)
+    setEditingId(null)
+  }
 
   return (
     <div className="space-y-5">
@@ -100,7 +129,7 @@ export default function ResultsPage() {
           <h3 className="text-[13px] font-semibold text-white/70">All Graded Assessments</h3>
         </div>
         <table className="w-full plato-table">
-          <thead><tr><th>Assessment</th><th>Subject</th><th>Date</th><th>Submissions</th><th>Avg Score</th><th>Top Grade</th></tr></thead>
+          <thead><tr><th>Assessment</th><th>Subject</th><th>Date</th><th>Submissions</th><th>Avg Score</th><th>Top Grade</th><th>Actions</th></tr></thead>
           <tbody>
             {filtered.slice(0, 15).map((a) => {
               const subs = a.results
@@ -114,6 +143,12 @@ export default function ResultsPage() {
                   <td className="text-[12px] text-white/60">{subs.length}</td>
                   <td><span className="text-[13px] font-semibold" style={{ color: avg >= 80 ? '#00FFA3' : avg >= 60 ? '#4D7CFF' : '#FF6B7A' }}>{avg > 0 ? `${avg}%` : '—'}</span></td>
                   <td><span className={`text-[13px] font-bold ${getGradeColor(topGrade)}`}>{topGrade}</span></td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <button className="btn-ghost text-[11px]" onClick={() => setViewingId(a.id)}><Eye size={12} /> View Submissions</button>
+                      <button className="btn-ghost text-[11px]" onClick={() => openEdit(a.id)}><Pencil size={12} /> Enter Grades</button>
+                    </div>
+                  </td>
                 </tr>
               )
             })}
@@ -126,6 +161,61 @@ export default function ResultsPage() {
           </div>
         )}
       </div>
+
+      <Modal open={Boolean(viewing)} onClose={() => setViewingId(null)} title={viewing ? `Submissions — ${viewing.title}` : 'Submissions'}>
+        {viewing && (
+          <div className="space-y-3">
+            <p className="text-[12px] text-white/40">{viewing.subject} · {formatDate(viewing.date)} · Out of {viewing.maxMarks} marks</p>
+            <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto">
+              {viewing.results.map((r) => {
+                const student = students.find((s) => s.id === r.studentId)
+                return (
+                  <div key={r.studentId} className="flex items-center gap-3 py-2.5">
+                    {student && <Avatar name={student.name} size="xs" />}
+                    <span className="flex-1 text-[13px] text-white/75">{student?.name || r.studentId}</span>
+                    <span className="text-[12px] text-white/50">{r.marks}/{viewing.maxMarks}</span>
+                    <span className="text-[12px] text-white/40 w-10 text-right">{r.percentage}%</span>
+                    <span className={`text-[13px] font-bold w-6 text-right ${getGradeColor(r.grade)}`}>{r.grade}</span>
+                  </div>
+                )
+              })}
+              {viewing.results.length === 0 && <p className="text-[13px] text-white/30 text-center py-6">No submissions recorded.</p>}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal open={Boolean(editing)} onClose={() => setEditingId(null)} title={editing ? `Enter Grades — ${editing.title}` : 'Enter Grades'}>
+        {editing && (
+          <div className="space-y-4">
+            <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto">
+              {editing.results.map((r) => {
+                const student = students.find((s) => s.id === r.studentId)
+                return (
+                  <div key={r.studentId} className="flex items-center gap-3 py-2.5">
+                    {student && <Avatar name={student.name} size="xs" />}
+                    <span className="flex-1 text-[13px] text-white/75">{student?.name || r.studentId}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max={editing.maxMarks}
+                      className="plato-input w-24 text-center"
+                      value={marks[r.studentId] ?? ''}
+                      onChange={(e) => setMarks((m) => ({ ...m, [r.studentId]: e.target.value }))}
+                    />
+                    <span className="text-[11px] text-white/30 w-12">/ {editing.maxMarks}</span>
+                  </div>
+                )
+              })}
+              {editing.results.length === 0 && <p className="text-[13px] text-white/30 text-center py-6">No submissions to grade yet.</p>}
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button className="btn-ghost flex-1 justify-center border border-dark-border" onClick={() => setEditingId(null)}>Cancel</button>
+              <button className="btn-primary flex-1 justify-center" onClick={saveGrades}>Save Grades</button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

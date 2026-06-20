@@ -3,7 +3,9 @@ import { useLocation } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { generateId } from '@/lib/utils'
 import { askClaude, hasAnthropicKey } from '@/lib/anthropic'
-import { Brain, Send, Sparkles, BookOpen, Zap, RotateCcw, Bookmark, AlertTriangle } from 'lucide-react'
+import { Modal } from '@/components/ui/Modal'
+import { RequiredMark, RequiredFieldsNote } from '@/components/ui/FormField'
+import { Brain, Send, Sparkles, BookOpen, Zap, RotateCcw, Bookmark, AlertTriangle, Plus } from 'lucide-react'
 import type { Subject, AIMessage } from '@/types'
 
 // Renders the limited **bold** + newline markup our simulated responses use,
@@ -75,6 +77,51 @@ function generateAIResponse(question: string, subject: Subject): string {
   }
 
   return responses.default
+}
+
+type Flashcard = { front: string; back: string }
+
+const DEFAULT_FLASHCARDS: Record<string, Flashcard[]> = {
+  Physics: [
+    { front: `What is Newton's Second Law?`, back: 'F = ma — Net force equals mass times acceleration' },
+    { front: 'Define acceleration', back: 'Rate of change of velocity with respect to time. a = Δv/Δt (m/s²)' },
+    { front: 'What is the unit of force?', back: 'Newton (N) — equivalent to kg·m/s²' },
+    { front: 'State the law of conservation of energy', back: 'Energy cannot be created or destroyed, only transferred between forms.' },
+  ],
+  Chemistry: [
+    { front: 'What is oxidation?', back: 'Loss of electrons (or gain of oxygen) by a substance during a reaction.' },
+    { front: 'Define an alkane', back: 'A saturated hydrocarbon containing only single C–C bonds, general formula CₙH₂ₙ₊₂.' },
+    { front: 'What is the pH of a neutral solution?', back: '7 — equal concentrations of H⁺ and OH⁻ ions.' },
+  ],
+  Biology: [
+    { front: 'What is mitosis?', back: 'Cell division producing two genetically identical daughter cells for growth and repair.' },
+    { front: 'What carries genetic information?', back: 'DNA (deoxyribonucleic acid) — a double helix of nucleotide base pairs.' },
+    { front: 'What is osmosis?', back: 'Movement of water molecules from a region of high to low water potential through a partially permeable membrane.' },
+  ],
+  Mathematics: [
+    { front: 'What is the chain rule?', back: 'd/dx[f(g(x))] = f′(g(x)) · g′(x) — used to differentiate composite functions.' },
+    { front: 'State the quadratic formula', back: 'x = (−b ± √(b²−4ac)) / 2a' },
+    { front: 'What is Pythagoras\' theorem?', back: 'a² + b² = c², where c is the hypotenuse of a right-angled triangle.' },
+  ],
+  English: [
+    { front: 'What is a simile?', back: 'A figure of speech comparing two things using "like" or "as", e.g. "as brave as a lion".' },
+    { front: 'What is the difference between a metaphor and a simile?', back: 'A metaphor states something IS another thing; a simile says it is LIKE another thing.' },
+  ],
+  'Computer Science': [
+    { front: 'What is Big O notation?', back: 'A way of describing how an algorithm\'s runtime or space grows relative to input size, e.g. O(n), O(log n).' },
+    { front: 'Difference between recursion and iteration?', back: 'Recursion solves a problem by a function calling itself; iteration repeats steps using loops.' },
+  ],
+}
+
+const CUSTOM_CARDS_KEY = 'plato_custom_flashcards'
+
+function loadCustomFlashcards(): Record<string, Flashcard[]> {
+  try {
+    const raw = localStorage.getItem(CUSTOM_CARDS_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
 }
 
 function tabFromPath(pathname: string): 'ask' | 'quiz' | 'flashcards' {
@@ -191,12 +238,24 @@ export default function AITutorPage() {
   // Flashcards
   const [cardSubject, setCardSubject] = useState<Subject>('Physics')
   const [flipped, setFlipped] = useState<Record<number, boolean>>({})
-  const flashcards = [
-    { front: `What is Newton's Second Law?`, back: 'F = ma — Net force equals mass times acceleration' },
-    { front: 'Define acceleration', back: 'Rate of change of velocity with respect to time. a = Δv/Δt (m/s²)' },
-    { front: 'What is the unit of force?', back: 'Newton (N) — equivalent to kg·m/s²' },
-    { front: 'State the law of conservation of energy', back: 'Energy cannot be created or destroyed, only transferred between forms.' },
-  ]
+  const [customCards, setCustomCards] = useState<Record<string, Flashcard[]>>(() => loadCustomFlashcards())
+  const [showCardModal, setShowCardModal] = useState(false)
+  const [cardForm, setCardForm] = useState({ front: '', back: '' })
+
+  const flashcards = [...(DEFAULT_FLASHCARDS[cardSubject] || []), ...(customCards[cardSubject] || [])]
+
+  const closeCardModal = () => { setShowCardModal(false); setCardForm({ front: '', back: '' }) }
+
+  const createCard = () => {
+    if (!cardForm.front.trim() || !cardForm.back.trim()) return
+    const updated = {
+      ...customCards,
+      [cardSubject]: [...(customCards[cardSubject] || []), { front: cardForm.front.trim(), back: cardForm.back.trim() }],
+    }
+    setCustomCards(updated)
+    localStorage.setItem(CUSTOM_CARDS_KEY, JSON.stringify(updated))
+    closeCardModal()
+  }
 
   return (
     <div className="space-y-6 h-full">
@@ -440,10 +499,13 @@ export default function AITutorPage() {
       {activeTab === 'flashcards' && (
         <div className="space-y-5">
           <div className="flex items-center gap-4">
-            <select className="plato-input w-48" value={cardSubject} onChange={(e) => setCardSubject(e.target.value as Subject)}>
+            <select className="plato-input w-48" value={cardSubject} onChange={(e) => { setCardSubject(e.target.value as Subject); setFlipped({}) }}>
               {SUBJECTS.map((s) => <option key={s}>{s}</option>)}
             </select>
             <p className="text-xs text-muted-foreground">{flashcards.length} cards · Click to flip</p>
+            <button className="btn-primary ml-auto" onClick={() => setShowCardModal(true)}>
+              <Plus size={14} /> Create Card
+            </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -468,9 +530,34 @@ export default function AITutorPage() {
                 )}
               </div>
             ))}
+            {flashcards.length === 0 && (
+              <p className="text-sm text-muted-foreground col-span-full text-center py-8">No flashcards for {cardSubject} yet. Click "Create Card" to add one.</p>
+            )}
           </div>
         </div>
       )}
+
+      <Modal open={showCardModal} onClose={closeCardModal} title="Create Flashcard" isDirty={Boolean(cardForm.front || cardForm.back)}>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Subject</label>
+            <input className="plato-input opacity-60" readOnly value={cardSubject} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Front (Question)<RequiredMark /></label>
+            <textarea className="plato-input min-h-[70px]" placeholder="What is...?" value={cardForm.front} onChange={(e) => setCardForm((f) => ({ ...f, front: e.target.value }))} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Back (Answer)<RequiredMark /></label>
+            <textarea className="plato-input min-h-[70px]" placeholder="The answer is..." value={cardForm.back} onChange={(e) => setCardForm((f) => ({ ...f, back: e.target.value }))} />
+          </div>
+          <RequiredFieldsNote />
+          <div className="flex gap-3 pt-2">
+            <button className="btn-ghost flex-1 justify-center border border-dark-border min-h-[44px]" onClick={closeCardModal}>Cancel</button>
+            <button className="btn-primary flex-1 justify-center min-h-[44px]" onClick={createCard} disabled={!cardForm.front.trim() || !cardForm.back.trim()}>Create Card</button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

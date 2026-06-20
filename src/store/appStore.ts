@@ -95,6 +95,8 @@ interface AppState {
 
   addStudent: (student: Student) => void;
   updateStudent: (id: string, updates: Partial<Student>) => void;
+  addParent: (parent: Parent) => void;
+  updateParent: (id: string, updates: Partial<Parent>) => void;
 
   addTeacher: (teacher: Teacher) => void;
   updateTeacher: (id: string, updates: Partial<Teacher>) => void;
@@ -243,6 +245,14 @@ export const useAppStore = create<AppState>()(
       updateStudent: (id, updates) => {
         if (!guardRole(get, 'student')) return;
         set((s) => ({ students: s.students.map((st) => (st.id === id ? { ...st, ...updates } : st)) }));
+      },
+      addParent: (parent) => {
+        if (!guardRole(get, 'student')) return;
+        set((s) => ({ parents: [...s.parents, parent] }));
+      },
+      updateParent: (id, updates) => {
+        if (!guardRole(get, 'student')) return;
+        set((s) => ({ parents: s.parents.map((p) => (p.id === id ? { ...p, ...updates } : p)) }));
       },
 
       addTeacher: (teacher) => {
