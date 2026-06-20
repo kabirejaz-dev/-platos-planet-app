@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { DemoBadge } from '@/components/ui/DemoBadge'
 import { formatDate } from '@/lib/utils'
 import { ClipboardList, CheckCircle2, Clock, AlertCircle, Upload, X } from 'lucide-react'
 import { toast } from '@/components/ui/Toaster'
+import { CelebrationOverlay } from '@/components/ui/CelebrationOverlay'
 import type { Homework } from '@/types'
 
 const STATUS_CONFIG = {
@@ -15,10 +15,11 @@ const STATUS_CONFIG = {
 }
 
 export default function StudentHomeworkPage() {
-  const { currentUser, students, homework, batches, updateHomework, addXP } = useAppStore()
+  const { currentUser, students, homework, batches, submitHomework, addXP } = useAppStore()
   const [filter, setFilter] = useState<'all' | Homework['status']>('all')
   const [submitting, setSubmitting] = useState<string | null>(null)
   const [note, setNote] = useState('')
+  const [celebrating, setCelebrating] = useState<Homework | null>(null)
 
   const student = students.find((s) => s.userId === currentUser?.id)
   if (!student) return <div className="text-white/30 p-6">Student profile not found.</div>
@@ -43,18 +44,14 @@ export default function StudentHomeworkPage() {
   })
 
   const handleSubmit = (hw: Homework) => {
-    updateHomework(hw.id, {
-      submissions: [
-        ...hw.submissions.filter((s) => s.studentId !== student.id),
-        {
-          studentId: student.id,
-          submittedAt: new Date().toISOString(),
-          status: 'submitted',
-        },
-      ],
+    submitHomework(hw.id, {
+      studentId: student.id,
+      submittedAt: new Date().toISOString(),
+      status: 'submitted',
     })
     addXP(student.id, 15)
     toast.success('Homework submitted! +15 XP', hw.title)
+    setCelebrating(hw)
     setSubmitting(null)
     setNote('')
   }
@@ -75,7 +72,6 @@ export default function StudentHomeworkPage() {
       <PageHeader
         title="Homework"
         subtitle={`${counts.assigned} pending · ${counts.graded} graded`}
-        badge={<DemoBadge />}
       />
 
       {/* Filter tabs */}
@@ -212,6 +208,14 @@ export default function StudentHomeworkPage() {
           </div>
         )}
       </div>
+
+      <CelebrationOverlay
+        open={Boolean(celebrating)}
+        onClose={() => setCelebrating(null)}
+        xp={15}
+        studentFirstName={student.name.split(' ')[0]}
+        itemTitle={celebrating?.title || ''}
+      />
     </div>
   )
 }

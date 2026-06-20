@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
   AuthUser, Branch, Student, Teacher, Parent, Batch, AttendanceRecord,
-  Homework, Assessment, Lead, Invoice, Message, Meeting, Notification,
+  Homework, HomeworkSubmission, Assessment, Lead, Invoice, Message, Meeting, Notification,
   SystemSettings, AIConversation, Achievement, User,
   Campaign, ScholarshipApplication, AuditLogEntry, BranchRequest, ClassNote,
   SyllabusPlan, TeacherReview, Intervention, PaymentPlan, Expense, StudyPlan,
@@ -21,6 +21,7 @@ const ROLE_ACCESS = {
   batch: ['super_admin', 'branch_admin'],
   attendance: ['teacher', 'branch_admin'],
   homework: ['teacher'],
+  homeworkSubmission: ['student'],
   assessment: ['teacher', 'coordinator'],
   lead: ['sales'],
   invoice: ['finance', 'super_admin'],
@@ -109,6 +110,7 @@ interface AppState {
 
   addHomework: (hw: Homework) => void;
   updateHomework: (id: string, updates: Partial<Homework>) => void;
+  submitHomework: (id: string, submission: HomeworkSubmission) => void;
 
   addAssessment: (a: Assessment) => void;
   updateAssessment: (id: string, updates: Partial<Assessment>) => void;
@@ -301,6 +303,16 @@ export const useAppStore = create<AppState>()(
       updateHomework: (id, updates) => {
         if (!guardRole(get, 'homework')) return;
         set((s) => ({ homework: s.homework.map((h) => (h.id === id ? { ...h, ...updates } : h)) }));
+      },
+      submitHomework: (id, submission) => {
+        if (!guardRole(get, 'homeworkSubmission')) return;
+        set((s) => ({
+          homework: s.homework.map((h) =>
+            h.id === id
+              ? { ...h, submissions: [...h.submissions.filter((sub) => sub.studentId !== submission.studentId), submission] }
+              : h
+          ),
+        }));
       },
 
       addAssessment: (a) => {
