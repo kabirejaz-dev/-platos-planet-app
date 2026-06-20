@@ -5,7 +5,7 @@ import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatCurrency, formatDate, getStatusColor, getPlanetEmoji, calculateAttendanceRate } from '@/lib/utils'
 import { Link } from 'react-router-dom'
-import { TrendingUp, UserCheck, ClipboardList, DollarSign, ArrowRight, MessageSquare } from 'lucide-react'
+import { UserCheck, ClipboardList, DollarSign, ArrowRight, MessageSquare } from 'lucide-react'
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts'
 
 export default function ParentDashboard() {

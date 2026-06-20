@@ -88,7 +88,7 @@ export default function FollowUpsPage() {
             <Phone size={13} /> Call
           </a>
           <a
-            href={`https://wa.me/${lead.parentPhone.replace(/\D/g, '')}`}
+            href={`https://wa.me/${lead.parentPhone.replace(/\D/g, '')}?text=${encodeURIComponent("Hello, I'm calling from Plato's Planet regarding your child's enquiry.")}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-ghost flex-1 justify-center text-[12px]"

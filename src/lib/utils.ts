@@ -17,12 +17,22 @@ export function formatDateFull(date: string | Date): string {
   return format(new Date(date), 'PPP')
 }
 
+// All times in the app are displayed in the school's local timezone (Asia/Dubai,
+// UTC+4) regardless of the viewer's machine timezone — date-fns' format() uses
+// the host's local time, so we convert via toLocaleString first.
+const UAE_TIMEZONE = 'Asia/Dubai'
+
+function toUAE(date: string | Date): Date {
+  const d = typeof date === 'string' ? new Date(date) : date
+  return new Date(d.toLocaleString('en-US', { timeZone: UAE_TIMEZONE }))
+}
+
 export function formatTime(date: string | Date): string {
-  return format(new Date(date), 'h:mm a')
+  return format(toUAE(date), 'h:mm a')
 }
 
 export function formatDateTime(date: string | Date): string {
-  return format(new Date(date), 'MMM d, yyyy h:mm a')
+  return format(toUAE(date), 'MMM d, yyyy h:mm a')
 }
 
 export function timeAgo(date: string | Date): string {
@@ -87,6 +97,7 @@ export function getStatusColor(status: string): string {
     pending: 'badge-warning',
     overdue: 'badge-danger',
     waived: 'badge-purple',
+    partial: 'badge-info',
     new: 'badge-info',
     contacted: 'badge-purple',
     trial_scheduled: 'badge-warning',
@@ -130,4 +141,16 @@ export function daysUntil(date: string): number {
   const now = new Date()
   const diff = d.getTime() - now.getTime()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
+}
+
+// Last n calendar months ending at ref (oldest first), so charts always span
+// a real rolling window instead of only the months that happen to have data.
+export function getLastNMonths(n: number, ref: Date = new Date()): { key: string; label: string }[] {
+  const months: { key: string; label: string }[] = []
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(ref.getFullYear(), ref.getMonth() - i, 1)
+    const label = d.toLocaleString('en-US', { month: 'short', year: '2-digit' })
+    months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label })
+  }
+  return months
 }

@@ -3,8 +3,7 @@ import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Avatar } from '@/components/ui/Avatar'
 import { DemoBadge } from '@/components/ui/DemoBadge'
-import { formatDate } from '@/lib/utils'
-import { BookOpen, Users, Clock, ChevronRight, X, Star } from 'lucide-react'
+import { BookOpen, Clock, ChevronRight, X, Star } from 'lucide-react'
 
 export default function ClassesPage() {
   const { currentUser, teachers, batches, students, attendance } = useAppStore()

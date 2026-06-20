@@ -6,7 +6,7 @@ import {
   BarChart3, Settings, LogOut, Building2, UserCheck, ClipboardList,
   Calendar, MessageSquare, Award, Brain, Zap, FileText,
   TrendingUp, Target, Bell, ShieldCheck, Star,
-  Home, FlaskConical, BookMarked, PenTool, Lightbulb, Search
+  Home, FlaskConical, BookMarked, PenTool, Lightbulb, Search, UserCircle
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { cn } from '@/lib/utils'
@@ -26,6 +26,7 @@ function getNavItems(role: UserRole): NavItem[] {
       { label: 'Settings', path: '/super-admin/settings', icon: <Settings size={16} /> },
       { label: 'Audit Logs', path: '/super-admin/audit', icon: <FileText size={16} /> },
       { label: 'Go Live Setup', path: '/super-admin/go-live', icon: <Zap size={16} /> },
+      { label: 'Go-Live Command Centre', path: '/super-admin/go-live-status', icon: <ShieldCheck size={16} /> },
     ],
     branch_admin: [
       { label: 'Dashboard', path: '/branch-admin', icon: <LayoutDashboard size={16} /> },
@@ -90,13 +91,17 @@ function getNavItems(role: UserRole): NavItem[] {
     ],
     student: [
       { label: 'Dashboard', path: '/student', icon: <Home size={16} /> },
+      { label: 'My Schedule', path: '/student/schedule', icon: <Calendar size={16} /> },
       { label: 'My Classes', path: '/student/classes', icon: <BookOpen size={16} /> },
       { label: 'Homework', path: '/student/homework', icon: <ClipboardList size={16} /> },
       { label: 'Tests', path: '/student/tests', icon: <PenTool size={16} /> },
+      { label: 'Attendance', path: '/student/attendance', icon: <UserCheck size={16} /> },
+      { label: 'Fees', path: '/student/fees', icon: <DollarSign size={16} /> },
       { label: 'AI Doubt Solver', path: '/student/ai-tutor', icon: <Brain size={16} /> },
       { label: 'Study Plan', path: '/student/study-plan', icon: <Target size={16} /> },
       { label: 'Resources', path: '/student/resources', icon: <BookMarked size={16} /> },
       { label: 'Achievements', path: '/student/achievements', icon: <Award size={16} /> },
+      { label: 'My Profile', path: '/student/profile', icon: <UserCircle size={16} /> },
     ],
     ai_tutor: [
       { label: 'Dashboard', path: '/ai-tutor', icon: <LayoutDashboard size={16} /> },

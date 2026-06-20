@@ -1,5 +1,4 @@
 import { useAppStore } from '@/store/appStore'
-import { PageHeader } from '@/components/ui/PageHeader'
 import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatDate, getPlanetEmoji, getGradeColor, gradeFromPercentage, calculateAttendanceRate } from '@/lib/utils'
@@ -13,12 +12,11 @@ const PLANET_COLORS: Record<string, string> = {
 }
 
 export default function StudentDashboard() {
-  const { currentUser, students, homework, assessments, attendance, batches, achievements } = useAppStore()
+  const { currentUser, students, homework, assessments, attendance, achievements } = useAppStore()
 
   const student = students.find((s) => s.userId === currentUser?.id)
   if (!student) return <div className="text-muted-foreground p-4">Student profile not found.</div>
 
-  const myBatches = batches.filter((b) => student.batchIds.includes(b.id))
   const myAtt = attendance.filter((a) => a.studentId === student.id)
   const attRate = calculateAttendanceRate(myAtt.filter((a) => a.status === 'present').length, myAtt.length)
   const myAssessments = assessments.filter((a) => a.results.some((r) => r.studentId === student.id) && a.status === 'graded')
@@ -103,10 +101,10 @@ export default function StudentDashboard() {
             <p className="text-xs text-muted-foreground mb-1">Predicted Grade</p>
             <p className={`text-2xl font-bold font-display ${getGradeColor(predictedGrade)}`}>{predictedGrade}</p>
           </div>
-          <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+          <Link to="/student/attendance" className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors">
             <p className="text-xs text-muted-foreground mb-1">Attendance</p>
             <p className={`text-2xl font-bold font-display ${attRate >= 80 ? 'text-[#00FFA3]' : 'text-[#FF6B7A]'}`}>{attRate}%</p>
-          </div>
+          </Link>
           <div className="p-3 rounded-xl bg-white/5 border border-white/10">
             <p className="text-xs text-muted-foreground mb-1">Avg Score</p>
             <p className="text-2xl font-bold text-[#4D7CFF] font-display">{avgScore}%</p>

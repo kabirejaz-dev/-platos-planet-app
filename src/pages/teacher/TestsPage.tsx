@@ -3,8 +3,10 @@ import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
+import { FieldError, fieldInputClass } from '@/components/ui/FormField'
 import { generateId, formatDate, gradeFromPercentage, getGradeColor, getStatusColor } from '@/lib/utils'
-import { Plus, BarChart3, Users, Clock, Star } from 'lucide-react'
+import { assessmentSchema, getFieldErrors } from '@/lib/schemas'
+import { Plus, BarChart3, Clock, Star } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function TestsPage() {
@@ -25,9 +27,12 @@ export default function TestsPage() {
     duration: '60',
     topics: '',
   })
+  const [errors, setErrors] = useState<Partial<Record<'title' | 'date' | 'maxMarks' | 'duration', string>>>({})
 
   const handleCreate = () => {
     if (!teacher) return
+    const fieldErrors = getFieldErrors(assessmentSchema, form)
+    if (Object.keys(fieldErrors).length > 0) { setErrors(fieldErrors); return }
     const batch = batches.find((b) => b.id === form.batchId)
     addAssessment({
       id: `as-${generateId()}`,
@@ -45,6 +50,7 @@ export default function TestsPage() {
       results: [],
     })
     setShowModal(false)
+    setErrors({})
   }
 
   const saveResults = (assessmentId: string) => {
@@ -208,7 +214,7 @@ export default function TestsPage() {
         </div>
       )}
 
-      <Modal open={showModal} onClose={() => setShowModal(false)} title="Create Assessment">
+      <Modal open={showModal} onClose={() => { setShowModal(false); setErrors({}) }} title="Create Assessment">
         <div className="space-y-4">
           {[
             { label: 'Batch', key: 'batchId', type: 'select' },
@@ -233,12 +239,15 @@ export default function TestsPage() {
                   <option value="assignment">Assignment</option>
                 </select>
               ) : (
-                <input type={f.type || 'text'} className="plato-input" placeholder={f.placeholder} value={form[f.key as keyof typeof form]} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} />
+                <>
+                  <input type={f.type || 'text'} className={fieldInputClass(errors[f.key as keyof typeof errors])} placeholder={f.placeholder} value={form[f.key as keyof typeof form]} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} />
+                  <FieldError message={errors[f.key as keyof typeof errors]} />
+                </>
               )}
             </div>
           ))}
           <div className="flex gap-3 pt-2">
-            <button className="btn-ghost flex-1 justify-center border border-dark-border" onClick={() => setShowModal(false)}>Cancel</button>
+            <button className="btn-ghost flex-1 justify-center border border-dark-border" onClick={() => { setShowModal(false); setErrors({}) }}>Cancel</button>
             <button className="btn-primary flex-1 justify-center" onClick={handleCreate} disabled={!form.title || !form.date}>Create</button>
           </div>
         </div>

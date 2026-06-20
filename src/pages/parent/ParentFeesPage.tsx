@@ -11,6 +11,7 @@ const STATUS_CONFIG: Record<Invoice['status'], { icon: JSX.Element; color: strin
   pending: { icon: <Clock size={13} />,         color: '#FBBF24', bg: 'rgba(251,191,36,0.1)', label: 'Pending' },
   overdue: { icon: <AlertCircle size={13} />,   color: '#FF6B7A', bg: 'rgba(255,107,122,0.1)', label: 'Overdue' },
   waived:  { icon: <CheckCircle2 size={13} />,  color: '#94A3B8', bg: 'rgba(148,163,184,0.1)', label: 'Waived' },
+  partial: { icon: <Clock size={13} />,         color: '#4D7CFF', bg: 'rgba(77,124,255,0.1)',  label: 'Partial' },
 }
 
 export default function ParentFeesPage() {

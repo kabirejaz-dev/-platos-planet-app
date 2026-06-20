@@ -2,7 +2,8 @@ import { Bell, Search, Menu, Command } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import { Avatar } from '@/components/ui/Avatar'
 import { useState, useEffect } from 'react'
-import { formatDate } from '@/lib/utils'
+import { useNavigate } from 'react-router-dom'
+import { timeAgo } from '@/lib/utils'
 import { CommandPalette } from '@/components/ui/CommandPalette'
 
 interface TopBarProps {
@@ -17,7 +18,8 @@ const typeColor: Record<string, string> = {
 }
 
 export function TopBar({ onToggleSidebar }: TopBarProps) {
-  const { currentUser, notifications, markNotificationRead } = useAppStore()
+  const { currentUser, notifications, markNotificationRead, markAllNotificationsRead } = useAppStore()
+  const navigate = useNavigate()
   const [showNotifs, setShowNotifs] = useState(false)
   const [showCmd, setShowCmd] = useState(false)
 
@@ -55,6 +57,7 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
+          aria-label="Toggle sidebar"
           className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/5 transition-all"
         >
           <Menu size={16} />
@@ -88,6 +91,7 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
         <div className="relative">
           <button
             onClick={() => setShowNotifs(!showNotifs)}
+            aria-label="View notifications"
             className="relative w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/5 transition-all"
           >
             <Bell size={16} />
@@ -122,9 +126,19 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
                   className="flex items-center justify-between px-4 py-3"
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
                 >
-                  <span className="text-[13px] font-semibold text-white/90">Notifications</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-semibold text-white/90">Notifications</span>
+                    {unread > 0 && (
+                      <span className="badge-danger">{unread} new</span>
+                    )}
+                  </div>
                   {unread > 0 && (
-                    <span className="badge-danger">{unread} new</span>
+                    <button
+                      onClick={() => markAllNotificationsRead(currentUser.id)}
+                      className="text-[11px] font-medium text-[#4D7CFF] hover:underline"
+                    >
+                      Mark all read
+                    </button>
                   )}
                 </div>
 
@@ -133,10 +147,14 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
                   {userNotifs.length === 0 ? (
                     <p className="text-[13px] text-white/30 text-center py-8">No notifications yet</p>
                   ) : (
-                    userNotifs.map((n) => (
+                    userNotifs.slice(0, 5).map((n) => (
                       <div
                         key={n.id}
-                        onClick={() => markNotificationRead(n.id)}
+                        onClick={() => {
+                          markNotificationRead(n.id)
+                          setShowNotifs(false)
+                          if (n.link) navigate(n.link)
+                        }}
                         className="px-4 py-3 cursor-pointer transition-colors"
                         style={{
                           borderBottom: '1px solid rgba(255,255,255,0.04)',
@@ -156,13 +174,18 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
                           <div className="flex-1 min-w-0">
                             <p className="text-[12px] font-semibold text-white/90 leading-snug">{n.title}</p>
                             <p className="text-[11px] text-white/40 mt-0.5 leading-snug">{n.message}</p>
-                            <p className="text-[10px] text-white/25 mt-1">{formatDate(n.createdAt)}</p>
+                            <p className="text-[10px] text-white/25 mt-1">{timeAgo(n.createdAt)}</p>
                           </div>
                         </div>
                       </div>
                     ))
                   )}
                 </div>
+                {userNotifs.length > 5 && (
+                  <div className="px-4 py-2 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <span className="text-[11px] text-white/25">+{userNotifs.length - 5} more</span>
+                  </div>
+                )}
               </div>
             </>
           )}

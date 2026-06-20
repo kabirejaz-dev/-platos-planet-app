@@ -3,8 +3,10 @@ import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Avatar } from '@/components/ui/Avatar'
 import { DemoBadge } from '@/components/ui/DemoBadge'
+import { FieldError, fieldInputClass } from '@/components/ui/FormField'
 import { generateId } from '@/lib/utils'
-import { Plus, BookOpen, Users, Clock, X } from 'lucide-react'
+import { batchSchema, getFieldErrors } from '@/lib/schemas'
+import { Plus, BookOpen, Clock, X } from 'lucide-react'
 import { toast } from '@/components/ui/Toaster'
 import type { BatchStatus, Subject, Curriculum } from '@/types'
 
@@ -34,6 +36,7 @@ export default function BatchesPage() {
     start1: '16:00',
     end1: '18:00',
   })
+  const [errors, setErrors] = useState<Partial<Record<'name' | 'grade' | 'teacherId' | 'maxCapacity', string>>>({})
 
   const branchBatches = batches.filter((b) =>
     currentUser?.branchId ? b.branchId === currentUser.branchId : true
@@ -43,7 +46,8 @@ export default function BatchesPage() {
   )
 
   const handleCreate = () => {
-    if (!form.name || !form.grade || !form.teacherId) return
+    const fieldErrors = getFieldErrors(batchSchema, form)
+    if (Object.keys(fieldErrors).length > 0) { setErrors(fieldErrors); return }
     addBatch({
       id: generateId(),
       name: form.name,
@@ -62,9 +66,8 @@ export default function BatchesPage() {
     toast.success('Batch created', form.name)
     setShowModal(false)
     setForm(f => ({ ...f, name: '', grade: '', room: '', teacherId: '' }))
+    setErrors({})
   }
-
-  const getTeacherName = (id: string) => branchTeachers.find((t) => t.id === id)?.name ?? '—'
 
   return (
     <div className="space-y-5">
@@ -170,7 +173,7 @@ export default function BatchesPage() {
       {/* Create modal */}
       {showModal && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+          <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => { setShowModal(false); setErrors({}) }} />
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
@@ -183,7 +186,7 @@ export default function BatchesPage() {
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
               >
                 <h3 className="text-[15px] font-bold text-white font-display">Create New Batch</h3>
-                <button onClick={() => setShowModal(false)} className="text-white/30 hover:text-white/70 transition-colors">
+                <button onClick={() => { setShowModal(false); setErrors({}) }} className="text-white/30 hover:text-white/70 transition-colors">
                   <X size={18} />
                 </button>
               </div>
@@ -192,7 +195,8 @@ export default function BatchesPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <label className="block text-[12px] font-semibold text-white/50 mb-1.5">Batch Name *</label>
-                    <input className="plato-input" placeholder="e.g. IGCSE Physics — Grade 10" value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} />
+                    <input className={fieldInputClass(errors.name)} placeholder="e.g. IGCSE Physics — Grade 10" value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} />
+                    <FieldError message={errors.name} />
                   </div>
                   <div>
                     <label className="block text-[12px] font-semibold text-white/50 mb-1.5">Subject</label>
@@ -208,11 +212,13 @@ export default function BatchesPage() {
                   </div>
                   <div>
                     <label className="block text-[12px] font-semibold text-white/50 mb-1.5">Grade *</label>
-                    <input className="plato-input" placeholder="e.g. Grade 10" value={form.grade} onChange={(e) => setForm(f => ({ ...f, grade: e.target.value }))} />
+                    <input className={fieldInputClass(errors.grade)} placeholder="e.g. Grade 10" value={form.grade} onChange={(e) => setForm(f => ({ ...f, grade: e.target.value }))} />
+                    <FieldError message={errors.grade} />
                   </div>
                   <div>
                     <label className="block text-[12px] font-semibold text-white/50 mb-1.5">Max Capacity</label>
-                    <input className="plato-input" type="number" min={1} max={50} value={form.maxCapacity} onChange={(e) => setForm(f => ({ ...f, maxCapacity: Number(e.target.value) }))} />
+                    <input className={fieldInputClass(errors.maxCapacity)} type="number" min={1} max={50} value={form.maxCapacity} onChange={(e) => setForm(f => ({ ...f, maxCapacity: Number(e.target.value) }))} />
+                    <FieldError message={errors.maxCapacity} />
                   </div>
                   <div>
                     <label className="block text-[12px] font-semibold text-white/50 mb-1.5">Room</label>
@@ -224,10 +230,11 @@ export default function BatchesPage() {
                   </div>
                   <div className="col-span-2">
                     <label className="block text-[12px] font-semibold text-white/50 mb-1.5">Teacher *</label>
-                    <select className="plato-input" value={form.teacherId} onChange={(e) => setForm(f => ({ ...f, teacherId: e.target.value }))}>
+                    <select className={fieldInputClass(errors.teacherId)} value={form.teacherId} onChange={(e) => setForm(f => ({ ...f, teacherId: e.target.value }))}>
                       <option value="">Select teacher…</option>
                       {branchTeachers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
+                    <FieldError message={errors.teacherId} />
                   </div>
                   <div className="col-span-2">
                     <label className="block text-[12px] font-semibold text-white/50 mb-1.5">Schedule</label>
@@ -246,7 +253,7 @@ export default function BatchesPage() {
                 className="flex gap-3 px-5 py-4"
                 style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
               >
-                <button className="btn-ghost flex-1 justify-center" onClick={() => setShowModal(false)}>Cancel</button>
+                <button className="btn-ghost flex-1 justify-center" onClick={() => { setShowModal(false); setErrors({}) }}>Cancel</button>
                 <button className="btn-primary flex-1 justify-center" onClick={handleCreate}>
                   <Plus size={14} /> Create Batch
                 </button>

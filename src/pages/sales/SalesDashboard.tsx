@@ -24,15 +24,12 @@ const weeklyLeads = [
 const STATUS_STEPS = ['new', 'contacted', 'trial_scheduled', 'trial_done', 'enrolled']
 
 export default function SalesDashboard() {
-  const { leads, students } = useAppStore()
+  const { leads } = useAppStore()
 
   const newLeads = leads.filter((l) => l.status === 'new').length
   const trialScheduled = leads.filter((l) => l.status === 'trial_scheduled').length
   const enrolled = leads.filter((l) => l.status === 'enrolled').length
   const conversionRate = leads.length > 0 ? Math.round((enrolled / leads.length) * 100) : 0
-
-  const today = new Date().toISOString().split('T')[0]
-  const followUpsToday = leads.filter((l) => l.followUpDate === today).length
 
   return (
     <div className="space-y-6">

@@ -1,78 +1,133 @@
 import { lazy } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { AppShell } from '@/components/layout/AppShell'
 import { Toaster } from '@/components/ui/Toaster'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
+import { LegalPage, PRIVACY_SECTIONS, TERMS_SECTIONS, REFUND_SECTIONS } from '@/pages/shared/LegalPage'
+import type { UserRole } from '@/types'
 
 // Auth
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'))
 
 // Super Admin
-const SuperAdminDashboard = lazy(() => import('@/pages/super-admin/SuperAdminDashboard'))
-const BranchesPage        = lazy(() => import('@/pages/super-admin/BranchesPage'))
-const UsersPage           = lazy(() => import('@/pages/super-admin/UsersPage'))
-const GoLivePage          = lazy(() => import('@/pages/super-admin/GoLivePage'))
+const SuperAdminDashboard   = lazy(() => import('@/pages/super-admin/SuperAdminDashboard'))
+const BranchesPage          = lazy(() => import('@/pages/super-admin/BranchesPage'))
+const UsersPage             = lazy(() => import('@/pages/super-admin/UsersPage'))
+const GoLivePage            = lazy(() => import('@/pages/super-admin/GoLivePage'))
+const AdmissionsOverviewPage = lazy(() => import('@/pages/super-admin/AdmissionsOverviewPage'))
+const AcademicAnalyticsPage  = lazy(() => import('@/pages/super-admin/AcademicAnalyticsPage'))
+const ReportsCentrePage      = lazy(() => import('@/pages/super-admin/ReportsCentrePage'))
+const SystemSettingsPage     = lazy(() => import('@/pages/super-admin/SystemSettingsPage'))
+const AuditLogsPage          = lazy(() => import('@/pages/super-admin/AuditLogsPage'))
+const GoLiveCommandCentrePage = lazy(() => import('@/pages/super-admin/GoLiveCommandCentrePage'))
 
 // Branch Admin
-const BranchAdminDashboard = lazy(() => import('@/pages/branch-admin/BranchAdminDashboard'))
-const StudentsPage         = lazy(() => import('@/pages/branch-admin/StudentsPage'))
-const BatchesPage          = lazy(() => import('@/pages/branch-admin/BatchesPage'))
+const BranchAdminDashboard    = lazy(() => import('@/pages/branch-admin/BranchAdminDashboard'))
+const StudentsPage             = lazy(() => import('@/pages/branch-admin/StudentsPage'))
+const StudentProfileDetailPage = lazy(() => import('@/pages/branch-admin/StudentProfileDetailPage'))
+const BatchesPage              = lazy(() => import('@/pages/branch-admin/BatchesPage'))
+const TeachersPage             = lazy(() => import('@/pages/branch-admin/TeachersPage'))
+const TimetablePage            = lazy(() => import('@/pages/branch-admin/TimetablePage'))
+const AttendanceOverviewPage   = lazy(() => import('@/pages/branch-admin/AttendanceOverviewPage'))
+const FeeOverviewPage          = lazy(() => import('@/pages/branch-admin/FeeOverviewPage'))
+const RequestsPage             = lazy(() => import('@/pages/branch-admin/RequestsPage'))
+const BranchReportsPage        = lazy(() => import('@/pages/branch-admin/BranchReportsPage'))
 
 // Sales
-const SalesDashboard = lazy(() => import('@/pages/sales/SalesDashboard'))
-const LeadsPage      = lazy(() => import('@/pages/sales/LeadsPage'))
-const FollowUpsPage  = lazy(() => import('@/pages/sales/FollowUpsPage'))
+const SalesDashboard  = lazy(() => import('@/pages/sales/SalesDashboard'))
+const LeadsPage       = lazy(() => import('@/pages/sales/LeadsPage'))
+const FollowUpsPage   = lazy(() => import('@/pages/sales/FollowUpsPage'))
+const TrialsPage      = lazy(() => import('@/pages/sales/TrialsPage'))
+const AdmissionsPage  = lazy(() => import('@/pages/sales/AdmissionsPage'))
+const CampaignsPage   = lazy(() => import('@/pages/sales/CampaignsPage'))
+const ScholarshipsPage = lazy(() => import('@/pages/sales/ScholarshipsPage'))
+const SalesReportsPage = lazy(() => import('@/pages/sales/SalesReportsPage'))
 
 // Teacher
-const TeacherDashboard   = lazy(() => import('@/pages/teacher/TeacherDashboard'))
-const ClassesPage        = lazy(() => import('@/pages/teacher/ClassesPage'))
-const AttendancePage     = lazy(() => import('@/pages/teacher/AttendancePage'))
-const HomeworkPage       = lazy(() => import('@/pages/teacher/HomeworkPage'))
-const TestsPage          = lazy(() => import('@/pages/teacher/TestsPage'))
+const TeacherDashboard    = lazy(() => import('@/pages/teacher/TeacherDashboard'))
+const ClassesPage         = lazy(() => import('@/pages/teacher/ClassesPage'))
+const AttendancePage      = lazy(() => import('@/pages/teacher/AttendancePage'))
+const HomeworkPage        = lazy(() => import('@/pages/teacher/HomeworkPage'))
+const TestsPage           = lazy(() => import('@/pages/teacher/TestsPage'))
 const StudentProgressPage = lazy(() => import('@/pages/teacher/StudentProgressPage'))
+const ClassNotesPage      = lazy(() => import('@/pages/teacher/ClassNotesPage'))
 
 // Coordinator
-const CoordinatorDashboard = lazy(() => import('@/pages/coordinator/CoordinatorDashboard'))
+const CoordinatorDashboard  = lazy(() => import('@/pages/coordinator/CoordinatorDashboard'))
+const CurriculumPage        = lazy(() => import('@/pages/coordinator/CurriculumPage'))
+const AssessmentsCoordPage  = lazy(() => import('@/pages/coordinator/AssessmentsPage'))
+const ResultsPage           = lazy(() => import('@/pages/coordinator/ResultsPage'))
+const SyllabusPlansPage     = lazy(() => import('@/pages/coordinator/SyllabusPlansPage'))
+const TeacherReviewsPage    = lazy(() => import('@/pages/coordinator/TeacherReviewsPage'))
+const InterventionsPage     = lazy(() => import('@/pages/coordinator/InterventionsPage'))
+const AcademicReportsPage   = lazy(() => import('@/pages/coordinator/AcademicReportsPage'))
 
 // Finance
-const FinanceDashboard   = lazy(() => import('@/pages/finance/FinanceDashboard'))
-const InvoicesPage       = lazy(() => import('@/pages/finance/InvoicesPage'))
+const FinanceDashboard    = lazy(() => import('@/pages/finance/FinanceDashboard'))
+const InvoicesPage        = lazy(() => import('@/pages/finance/InvoicesPage'))
 const OutstandingFeesPage = lazy(() => import('@/pages/finance/OutstandingFeesPage'))
+const CollectionPage      = lazy(() => import('@/pages/finance/CollectionPage'))
+const ForecastsPage       = lazy(() => import('@/pages/finance/ForecastsPage'))
+const PaymentPlansPage    = lazy(() => import('@/pages/finance/PaymentPlansPage'))
+const ExpensesPage        = lazy(() => import('@/pages/finance/ExpensesPage'))
+const VATReportsPage      = lazy(() => import('@/pages/finance/VATReportsPage'))
 
 // Parent
 const ParentDashboard      = lazy(() => import('@/pages/parent/ParentDashboard'))
 const ParentAttendancePage = lazy(() => import('@/pages/parent/ParentAttendancePage'))
 const ParentHomeworkPage   = lazy(() => import('@/pages/parent/ParentHomeworkPage'))
 const ParentFeesPage       = lazy(() => import('@/pages/parent/ParentFeesPage'))
+const ProgressPage         = lazy(() => import('@/pages/parent/ProgressPage'))
+const ExamsPage            = lazy(() => import('@/pages/parent/ExamsPage'))
+const MeetingsPage         = lazy(() => import('@/pages/parent/MeetingsPage'))
 
 // Student
-const StudentDashboard   = lazy(() => import('@/pages/student/StudentDashboard'))
+const StudentDashboard    = lazy(() => import('@/pages/student/StudentDashboard'))
 const StudentHomeworkPage = lazy(() => import('@/pages/student/StudentHomeworkPage'))
-const StudentTestsPage   = lazy(() => import('@/pages/student/StudentTestsPage'))
-const AchievementsPage   = lazy(() => import('@/pages/student/AchievementsPage'))
+const StudentTestsPage    = lazy(() => import('@/pages/student/StudentTestsPage'))
+const AchievementsPage    = lazy(() => import('@/pages/student/AchievementsPage'))
+const MyClassesPage       = lazy(() => import('@/pages/student/MyClassesPage'))
+const StudyPlanPage       = lazy(() => import('@/pages/student/StudyPlanPage'))
+const ResourcesPage       = lazy(() => import('@/pages/student/ResourcesPage'))
+const StudentSchedulePage    = lazy(() => import('@/pages/student/StudentSchedulePage'))
+const StudentAttendancePage  = lazy(() => import('@/pages/student/StudentAttendancePage'))
+const StudentFeesPage        = lazy(() => import('@/pages/student/StudentFeesPage'))
+const StudentProfilePage     = lazy(() => import('@/pages/student/StudentProfilePage'))
 
 // AI Tutor
-const AITutorPage = lazy(() => import('@/pages/ai-tutor/AITutorPage'))
+const AITutorPage      = lazy(() => import('@/pages/ai-tutor/AITutorPage'))
+const SavedAnswersPage = lazy(() => import('@/pages/ai-tutor/SavedAnswersPage'))
 
 // Shared
 const MessagesPage = lazy(() => import('@/pages/shared/MessagesPage'))
 
-function StubPage({ title, description }: { title: string; description?: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#4D7CFF]/20 to-[#7B61FF]/20 border border-[#4D7CFF]/20 flex items-center justify-center mb-4">
-        <span className="text-2xl">📋</span>
-      </div>
-      <h2 className="text-xl font-bold text-foreground font-display mb-2">{title}</h2>
-      <p className="text-sm text-muted-foreground max-w-sm">{description || 'This section is fully wired up to shared data. Content populates as you add data through other sections.'}</p>
-    </div>
-  )
+// Which roles may view each top-level path segment. A logged-in user navigating
+// (directly, via back-button, or by typing a URL) outside their own segment is
+// bounced to their own dashboard instead of being allowed to view it.
+const ROLE_PATH_ACCESS: Record<string, UserRole[]> = {
+  'super-admin': ['super_admin'],
+  'branch-admin': ['branch_admin'],
+  sales: ['sales'],
+  teacher: ['teacher'],
+  coordinator: ['coordinator'],
+  finance: ['finance'],
+  parent: ['parent'],
+  student: ['student'],
+  'ai-tutor': ['student', 'ai_tutor'],
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const currentUser = useAppStore((s) => s.currentUser)
+  const location = useLocation()
   if (!currentUser) return <Navigate to="/login" replace />
+
+  const segment = location.pathname.split('/')[1]
+  const allowedRoles = ROLE_PATH_ACCESS[segment]
+  if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
+    return <Navigate to={`/${currentUser.role.replace('_', '-')}`} replace />
+  }
+
   return <>{children}</>
 }
 
@@ -88,6 +143,11 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/" element={<Navigate to={currentUser ? `/${currentUser.role.replace('_', '-')}` : '/login'} replace />} />
 
+            {/* Legal — public, no login required */}
+            <Route path="/privacy" element={<LegalPage title="Privacy Policy" sections={PRIVACY_SECTIONS} />} />
+            <Route path="/terms" element={<LegalPage title="Terms of Service" sections={TERMS_SECTIONS} />} />
+            <Route path="/refund" element={<LegalPage title="Refund Policy" sections={REFUND_SECTIONS} />} />
+
             {/* App shell wraps all authenticated routes */}
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
 
@@ -95,34 +155,36 @@ export default function App() {
               <Route path="/super-admin" element={<SuperAdminDashboard />} />
               <Route path="/super-admin/branches" element={<BranchesPage />} />
               <Route path="/super-admin/users" element={<UsersPage />} />
-              <Route path="/super-admin/admissions" element={<StubPage title="Admissions Overview" description="Consolidated view of all leads and enrolments across branches, powered by the Sales CRM data." />} />
-              <Route path="/super-admin/academics" element={<StubPage title="Academic Analytics" description="System-wide curriculum coverage, assessment results, and teacher performance." />} />
+              <Route path="/super-admin/admissions" element={<AdmissionsOverviewPage />} />
+              <Route path="/super-admin/academics" element={<AcademicAnalyticsPage />} />
               <Route path="/super-admin/finance" element={<FinanceDashboard />} />
-              <Route path="/super-admin/reports" element={<StubPage title="Reports Centre" description="Generate PDF and Excel reports for attendance, revenue, academics, and more." />} />
-              <Route path="/super-admin/settings" element={<StubPage title="System Settings" description="Configure platform-wide settings, permissions, and notification preferences." />} />
-              <Route path="/super-admin/audit" element={<StubPage title="Audit Logs" description="Full audit trail of all user actions, data changes, and system events." />} />
+              <Route path="/super-admin/reports" element={<ReportsCentrePage />} />
+              <Route path="/super-admin/settings" element={<SystemSettingsPage />} />
+              <Route path="/super-admin/audit" element={<AuditLogsPage />} />
               <Route path="/super-admin/go-live" element={<GoLivePage />} />
+              <Route path="/super-admin/go-live-status" element={<GoLiveCommandCentrePage />} />
 
               {/* ── Branch Admin ──────────────────────────────────────── */}
               <Route path="/branch-admin" element={<BranchAdminDashboard />} />
               <Route path="/branch-admin/students" element={<StudentsPage />} />
-              <Route path="/branch-admin/teachers" element={<StubPage title="Teacher Management" description="Teacher profiles, subject assignments, and performance metrics for this branch." />} />
+              <Route path="/branch-admin/students/:id" element={<StudentProfileDetailPage />} />
+              <Route path="/branch-admin/teachers" element={<TeachersPage />} />
               <Route path="/branch-admin/batches" element={<BatchesPage />} />
-              <Route path="/branch-admin/timetable" element={<StubPage title="Timetable" description="Weekly timetable view for all batches across rooms in this branch." />} />
-              <Route path="/branch-admin/attendance" element={<StubPage title="Attendance Overview" description="Branch-wide attendance report with per-student drill-down." />} />
-              <Route path="/branch-admin/fees" element={<StubPage title="Fee Overview" description="Outstanding, collected, and overdue fees for students in this branch." />} />
-              <Route path="/branch-admin/requests" element={<StubPage title="Requests" description="Parent requests, teacher leave applications, and room booking requests." />} />
-              <Route path="/branch-admin/reports" element={<StubPage title="Branch Reports" description="Comprehensive branch reports including attendance, academics, and revenue." />} />
+              <Route path="/branch-admin/timetable" element={<TimetablePage />} />
+              <Route path="/branch-admin/attendance" element={<AttendanceOverviewPage />} />
+              <Route path="/branch-admin/fees" element={<FeeOverviewPage />} />
+              <Route path="/branch-admin/requests" element={<RequestsPage />} />
+              <Route path="/branch-admin/reports" element={<BranchReportsPage />} />
 
               {/* ── Sales ─────────────────────────────────────────────── */}
               <Route path="/sales" element={<SalesDashboard />} />
               <Route path="/sales/leads" element={<LeadsPage />} />
               <Route path="/sales/follow-ups" element={<FollowUpsPage />} />
-              <Route path="/sales/trials" element={<StubPage title="Trial Classes" description="Schedule and track trial class sessions for prospective students." />} />
-              <Route path="/sales/admissions" element={<StubPage title="Admissions" description="Enrolled students with their complete onboarding checklist." />} />
-              <Route path="/sales/campaigns" element={<StubPage title="Campaigns" description="Marketing campaigns, referral programmes, and lead generation tracking." />} />
-              <Route path="/sales/scholarships" element={<StubPage title="Scholarships" description="Merit-based and need-based scholarship applications and approvals." />} />
-              <Route path="/sales/reports" element={<StubPage title="Sales Reports" description="Conversion rates, source analysis, and revenue attribution reports." />} />
+              <Route path="/sales/trials" element={<TrialsPage />} />
+              <Route path="/sales/admissions" element={<AdmissionsPage />} />
+              <Route path="/sales/campaigns" element={<CampaignsPage />} />
+              <Route path="/sales/scholarships" element={<ScholarshipsPage />} />
+              <Route path="/sales/reports" element={<SalesReportsPage />} />
 
               {/* ── Teacher ───────────────────────────────────────────── */}
               <Route path="/teacher" element={<TeacherDashboard />} />
@@ -130,58 +192,62 @@ export default function App() {
               <Route path="/teacher/attendance" element={<AttendancePage />} />
               <Route path="/teacher/homework" element={<HomeworkPage />} />
               <Route path="/teacher/tests" element={<TestsPage />} />
-              <Route path="/teacher/notes" element={<StubPage title="Class Notes" description="Upload and share lesson notes, presentations, and study materials with students." />} />
+              <Route path="/teacher/notes" element={<ClassNotesPage />} />
               <Route path="/teacher/progress" element={<StudentProgressPage />} />
               <Route path="/teacher/messages" element={<MessagesPage />} />
 
               {/* ── Coordinator ───────────────────────────────────────── */}
               <Route path="/coordinator" element={<CoordinatorDashboard />} />
-              <Route path="/coordinator/curriculum" element={<StubPage title="Curriculum Coverage" description="Track syllabus completion rates by batch, subject, and teacher." />} />
-              <Route path="/coordinator/syllabus" element={<StubPage title="Syllabus Plans" description="Termly and weekly syllabus plans for all curricula and subjects." />} />
-              <Route path="/coordinator/assessments" element={<StubPage title="Assessments" description="System-wide assessment calendar with approval workflow for high-stakes tests." />} />
-              <Route path="/coordinator/results" element={<StubPage title="Results" description="Moderated results, grade distributions, and comparative analysis." />} />
-              <Route path="/coordinator/reviews" element={<StubPage title="Teacher Reviews" description="Structured peer reviews and observation reports for teaching quality." />} />
-              <Route path="/coordinator/interventions" element={<StubPage title="Interventions" description="Targeted academic intervention plans for at-risk students." />} />
-              <Route path="/coordinator/reports" element={<StubPage title="Academic Reports" description="Termly and annual academic performance reports by curriculum and branch." />} />
+              <Route path="/coordinator/curriculum" element={<CurriculumPage />} />
+              <Route path="/coordinator/syllabus" element={<SyllabusPlansPage />} />
+              <Route path="/coordinator/assessments" element={<AssessmentsCoordPage />} />
+              <Route path="/coordinator/results" element={<ResultsPage />} />
+              <Route path="/coordinator/reviews" element={<TeacherReviewsPage />} />
+              <Route path="/coordinator/interventions" element={<InterventionsPage />} />
+              <Route path="/coordinator/reports" element={<AcademicReportsPage />} />
 
               {/* ── Finance ───────────────────────────────────────────── */}
               <Route path="/finance" element={<FinanceDashboard />} />
-              <Route path="/finance/collection" element={<StubPage title="Fee Collection" description="Record cash, card, and bank transfer payments against outstanding invoices." />} />
+              <Route path="/finance/collection" element={<CollectionPage />} />
               <Route path="/finance/invoices" element={<InvoicesPage />} />
-              <Route path="/finance/payment-plans" element={<StubPage title="Payment Plans" description="Set up instalment plans for families who need to spread fee payments." />} />
+              <Route path="/finance/payment-plans" element={<PaymentPlansPage />} />
               <Route path="/finance/outstanding" element={<OutstandingFeesPage />} />
-              <Route path="/finance/expenses" element={<StubPage title="Expenses" description="Track branch operating expenses and generate profit/loss reports." />} />
-              <Route path="/finance/vat" element={<StubPage title="VAT Reports" description="UAE VAT-compliant reports ready for submission to the FTA." />} />
-              <Route path="/finance/forecasts" element={<StubPage title="Revenue Forecasts" description="Predictive revenue model based on current enrolments and renewal rates." />} />
+              <Route path="/finance/expenses" element={<ExpensesPage />} />
+              <Route path="/finance/vat" element={<VATReportsPage />} />
+              <Route path="/finance/forecasts" element={<ForecastsPage />} />
 
               {/* ── Parent ────────────────────────────────────────────── */}
               <Route path="/parent" element={<ParentDashboard />} />
-              <Route path="/parent/progress" element={<StubPage title="Child Progress" description="Detailed academic progress timeline for your child." />} />
+              <Route path="/parent/progress" element={<ProgressPage />} />
               <Route path="/parent/attendance" element={<ParentAttendancePage />} />
               <Route path="/parent/homework" element={<ParentHomeworkPage />} />
-              <Route path="/parent/exams" element={<StubPage title="Exams & Results" description="Upcoming exams schedule and historical results." />} />
+              <Route path="/parent/exams" element={<ExamsPage />} />
               <Route path="/parent/fees" element={<ParentFeesPage />} />
-              <Route path="/parent/meetings" element={<StubPage title="Meetings" description="Book parent-teacher meetings and view upcoming appointments." />} />
+              <Route path="/parent/meetings" element={<MeetingsPage />} />
               <Route path="/parent/messages" element={<MessagesPage />} />
 
               {/* ── Student ───────────────────────────────────────────── */}
               <Route path="/student" element={<StudentDashboard />} />
-              <Route path="/student/classes" element={<StubPage title="My Classes" description="Your enrolled batches, schedules, and class materials." />} />
+              <Route path="/student/schedule" element={<StudentSchedulePage />} />
+              <Route path="/student/classes" element={<MyClassesPage />} />
               <Route path="/student/homework" element={<StudentHomeworkPage />} />
               <Route path="/student/tests" element={<StudentTestsPage />} />
+              <Route path="/student/attendance" element={<StudentAttendancePage />} />
+              <Route path="/student/fees" element={<StudentFeesPage />} />
               <Route path="/student/ai-tutor" element={<AITutorPage />} />
-              <Route path="/student/study-plan" element={<StubPage title="Study Plan" description="AI-generated personalised study plan based on your weak areas and upcoming exams." />} />
-              <Route path="/student/resources" element={<StubPage title="Resources" description="Past papers, notes, and learning materials uploaded by your teachers." />} />
+              <Route path="/student/study-plan" element={<StudyPlanPage />} />
+              <Route path="/student/resources" element={<ResourcesPage />} />
               <Route path="/student/achievements" element={<AchievementsPage />} />
+              <Route path="/student/profile" element={<StudentProfilePage />} />
 
               {/* ── AI Tutor ──────────────────────────────────────────── */}
               <Route path="/ai-tutor" element={<AITutorPage />} />
               <Route path="/ai-tutor/ask" element={<AITutorPage />} />
               <Route path="/ai-tutor/doubt-solver" element={<AITutorPage />} />
               <Route path="/ai-tutor/quiz" element={<AITutorPage />} />
-              <Route path="/ai-tutor/planner" element={<StubPage title="AI Study Planner" description="Let AI generate a personalised weekly study plan based on your syllabus and exam dates." />} />
+              <Route path="/ai-tutor/planner" element={<StudyPlanPage />} />
               <Route path="/ai-tutor/flashcards" element={<AITutorPage />} />
-              <Route path="/ai-tutor/saved" element={<StubPage title="Saved Answers" description="Bookmark AI answers you found useful for later revision." />} />
+              <Route path="/ai-tutor/saved" element={<SavedAnswersPage />} />
             </Route>
 
             {/* Catch-all */}

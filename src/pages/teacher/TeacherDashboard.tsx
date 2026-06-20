@@ -1,14 +1,27 @@
+import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
 import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
-import { formatDate, formatCurrency, getStatusColor } from '@/lib/utils'
+import { formatDate, generateId } from '@/lib/utils'
+import { toast } from '@/components/ui/Toaster'
 import { Link } from 'react-router-dom'
-import { BookOpen, Users, ClipboardList, ArrowRight, Calendar, CheckCircle2, Clock } from 'lucide-react'
+import { BookOpen, Users, ClipboardList, ArrowRight, Calendar, CheckCircle2, Clock, ChevronDown, ChevronUp, X } from 'lucide-react'
+import type { AttendanceStatus, Batch } from '@/types'
+
+type DraftEntry = { status: AttendanceStatus; lateMins: string }
+
+const STATUS_BUTTONS: { status: AttendanceStatus; label: string; color: string }[] = [
+  { status: 'present', label: '✓ Present', color: '#00FFA3' },
+  { status: 'late', label: '⏱ Late', color: '#FBBF24' },
+  { status: 'absent', label: '✗ Absent', color: '#FF6B7A' },
+]
 
 export default function TeacherDashboard() {
-  const { currentUser, teachers, batches, students, homework, assessments, attendance } = useAppStore()
+  const { currentUser, teachers, batches, students, homework, assessments, attendance, addAttendance } = useAppStore()
+  const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null)
+  const [drafts, setDrafts] = useState<Record<string, Record<string, DraftEntry>>>({})
 
   const teacher = teachers.find((t) => t.userId === currentUser?.id)
   if (!teacher) return <div className="text-muted-foreground p-4">Teacher profile not found.</div>
@@ -27,13 +40,49 @@ export default function TeacherDashboard() {
   const todayDate = new Date().toISOString().split('T')[0]
   const todayAttendance = attendance.filter((a) => a.date === todayDate && myBatches.some((b) => b.id === a.batchId))
   const todayPresent = todayAttendance.filter((a) => a.status === 'present').length
+  const todayMarkedBatchIds = new Set(todayAttendance.map((a) => a.batchId))
 
   const upcoming = myAssessments.filter((a) => a.status === 'upcoming')
+
+  const toggleExpand = (batch: Batch) => {
+    if (expandedBatchId === batch.id) { setExpandedBatchId(null); return }
+    const batchStudents = students.filter((s) => batch.studentIds.includes(s.id))
+    setDrafts((d) => ({
+      ...d,
+      [batch.id]: d[batch.id] || Object.fromEntries(batchStudents.map((s) => [s.id, { status: 'present' as AttendanceStatus, lateMins: '' }])),
+    }))
+    setExpandedBatchId(batch.id)
+  }
+
+  const setEntry = (batchId: string, studentId: string, update: Partial<DraftEntry>) => {
+    setDrafts((d) => ({
+      ...d,
+      [batchId]: { ...d[batchId], [studentId]: { ...d[batchId][studentId], ...update } },
+    }))
+  }
+
+  const submitAttendance = (batch: Batch) => {
+    const draft = drafts[batch.id]
+    if (!draft) return
+    Object.entries(draft).forEach(([studentId, entry]) => {
+      addAttendance({
+        id: `att-${generateId()}`,
+        batchId: batch.id,
+        studentId,
+        date: todayDate,
+        status: entry.status,
+        markedBy: teacher.id,
+        note: entry.status === 'late' && entry.lateMins ? `Late by ${entry.lateMins} mins` : undefined,
+      })
+    })
+    toast.success('Attendance marked', `for ${batch.name}`)
+    setExpandedBatchId(null)
+  }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Good ${new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, ${teacher.name.split(' ').slice(-1)[0]}`}
+        title={`Good ${new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, ${teacher.name.split(' ')[1]}`}
         subtitle={`${teacher.subjects.join(' · ')} · ${teacher.curriculums.join(', ')}`}
         badge={<DemoBadge />}
       />
@@ -61,29 +110,91 @@ export default function TeacherDashboard() {
               const batchStudents = students.filter((s) => batch.studentIds.includes(s.id))
               const today = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()] as typeof batch.schedule[0]['day']
               const todaySchedule = batch.schedule.find((s) => s.day === today)
+              const isSubmitted = todayMarkedBatchIds.has(batch.id)
+              const isExpanded = expandedBatchId === batch.id
+              const draft = drafts[batch.id]
 
               return (
-                <div key={batch.id} className="flex items-center gap-4 p-4 rounded-xl bg-white/3 border border-dark-border/50 hover:border-[#4D7CFF]/30 transition-all">
-                  <div className="w-1 h-14 rounded-full bg-[#4D7CFF]" />
-                  <div className="flex-1">
-                    <p className="font-semibold text-foreground">{batch.name}</p>
-                    <div className="flex items-center gap-4 mt-1">
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Users size={12} /> {batchStudents.length} students
-                      </span>
-                      {todaySchedule && (
+                <div key={batch.id} className="rounded-xl bg-white/3 border border-dark-border/50 hover:border-[#4D7CFF]/30 transition-all overflow-hidden">
+                  <div className="flex items-center gap-4 p-4">
+                    <div className="w-1 h-14 rounded-full bg-[#4D7CFF]" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-foreground">{batch.name}</p>
+                      <div className="flex items-center gap-4 mt-1">
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock size={12} /> {todaySchedule.startTime} – {todaySchedule.endTime}
+                          <Users size={12} /> {batchStudents.length} students
                         </span>
+                        {todaySchedule && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock size={12} /> {todaySchedule.startTime} – {todaySchedule.endTime}
+                          </span>
+                        )}
+                        <span className="text-xs text-muted-foreground">{batch.room || 'No room'}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {isSubmitted ? (
+                        <span className="text-xs px-3 py-1.5 rounded-lg bg-[#00FFA3]/10 text-[#00FFA3] font-semibold flex items-center gap-1.5">
+                          <CheckCircle2 size={13} /> Submitted
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => toggleExpand(batch)}
+                          className="text-xs px-3 py-1.5 rounded-lg bg-[#4D7CFF]/10 text-[#4D7CFF] hover:bg-[#4D7CFF]/20 transition-colors flex items-center gap-1"
+                        >
+                          Mark Attendance {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                        </button>
                       )}
-                      <span className="text-xs text-muted-foreground">{batch.room || 'No room'}</span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Link to="/teacher/attendance" className="text-xs px-3 py-1.5 rounded-lg bg-[#4D7CFF]/10 text-[#4D7CFF] hover:bg-[#4D7CFF]/20 transition-colors">
-                      Mark Attendance
-                    </Link>
-                  </div>
+
+                  {isExpanded && draft && (
+                    <div className="px-4 pb-4 pt-1 space-y-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                      {batchStudents.map((student) => {
+                        const entry = draft[student.id]
+                        return (
+                          <div key={student.id} className="flex items-center gap-3 py-1.5">
+                            <Avatar name={student.name} size="xs" />
+                            <span className="text-[13px] text-white/80 flex-1 min-w-0 truncate">{student.name}</span>
+                            <div className="flex gap-1.5">
+                              {STATUS_BUTTONS.map((b) => (
+                                <button
+                                  key={b.status}
+                                  onClick={() => setEntry(batch.id, student.id, { status: b.status })}
+                                  className="px-2 py-1 rounded-lg text-[11px] font-semibold transition-all"
+                                  style={{
+                                    background: entry?.status === b.status ? `${b.color}20` : 'rgba(255,255,255,0.04)',
+                                    border: `1px solid ${entry?.status === b.status ? b.color : 'rgba(255,255,255,0.08)'}`,
+                                    color: entry?.status === b.status ? b.color : 'rgba(148,163,184,0.6)',
+                                  }}
+                                >
+                                  {b.label}
+                                </button>
+                              ))}
+                            </div>
+                            {entry?.status === 'late' && (
+                              <input
+                                type="number"
+                                min={1}
+                                placeholder="mins"
+                                className="plato-input w-20 text-[12px] py-1"
+                                value={entry.lateMins}
+                                onChange={(e) => setEntry(batch.id, student.id, { lateMins: e.target.value })}
+                              />
+                            )}
+                          </div>
+                        )
+                      })}
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button className="btn-ghost text-[12px]" onClick={() => setExpandedBatchId(null)}>
+                          <X size={13} /> Cancel
+                        </button>
+                        <button className="btn-primary text-[12px]" onClick={() => submitAttendance(batch)}>
+                          Submit Attendance
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}

@@ -3,14 +3,14 @@ import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
-import { DemoBadge } from '@/components/ui/DemoBadge'
+import { FieldError, fieldInputClass } from '@/components/ui/FormField'
 import { generateId, formatDate, getStatusColor } from '@/lib/utils'
+import { homeworkSchema, getFieldErrors } from '@/lib/schemas'
 import { Plus, ClipboardList, Users, Clock, CheckCircle2, Star } from 'lucide-react'
 import { toast } from '@/components/ui/Toaster'
-import type { Subject } from '@/types'
 
 export default function HomeworkPage() {
-  const { currentUser, teachers, batches, students, homework, addHomework, updateHomework } = useAppStore()
+  const { currentUser, teachers, batches, students, homework, parents, addHomework, updateHomework, addNotification } = useAppStore()
   const teacher = teachers.find((t) => t.userId === currentUser?.id)
   const myBatches = batches.filter((b) => b.teacherId === teacher?.id)
   const myHomework = homework.filter((h) => h.teacherId === teacher?.id)
@@ -25,9 +25,12 @@ export default function HomeworkPage() {
     dueDate: '',
     maxMarks: '50',
   })
+  const [errors, setErrors] = useState<Partial<Record<'title' | 'dueDate' | 'maxMarks', string>>>({})
 
   const handleCreate = () => {
     if (!teacher) return
+    const fieldErrors = getFieldErrors(homeworkSchema, form)
+    if (Object.keys(fieldErrors).length > 0) { setErrors(fieldErrors); return }
     const batch = batches.find((b) => b.id === form.batchId)
     addHomework({
       id: `hw-${generateId()}`,
@@ -44,6 +47,7 @@ export default function HomeworkPage() {
     })
     setShowModal(false)
     setForm({ batchId: myBatches[0]?.id || '', title: '', description: '', dueDate: '', maxMarks: '50' })
+    setErrors({})
   }
 
   const saveGrade = (hwId: string, studentId: string) => {
@@ -56,8 +60,17 @@ export default function HomeworkPage() {
         s.studentId === studentId ? { ...s, marks: Number(g.marks), feedback: g.feedback, status: 'graded' } : s
       ),
     })
-    const studentName = students.find((s) => s.id === studentId)?.name
-    toast.success('Graded', `${studentName} · ${g.marks}/${hw?.maxMarks} marks`)
+    const student = students.find((s) => s.id === studentId)
+    toast.success('Graded', `${student?.name} · ${g.marks}/${hw?.maxMarks} marks`)
+
+    if (student && hw) {
+      const gradeMsg = `${hw.title}: ${student.name} scored ${g.marks}/${hw.maxMarks}.`
+      addNotification({ id: `notif-${generateId()}`, userId: student.userId, title: 'Homework Graded', message: gradeMsg, type: 'success', isRead: false, createdAt: new Date().toISOString(), link: '/student/homework' })
+      const parent = parents.find((p) => p.id === student.parentId)
+      if (parent) {
+        addNotification({ id: `notif-${generateId()}`, userId: parent.userId, title: 'Homework Graded', message: gradeMsg, type: 'info', isRead: false, createdAt: new Date().toISOString(), link: '/parent/homework' })
+      }
+    }
   }
 
   const viewHW = myHomework.find((h) => h.id === selectedHW)
@@ -98,8 +111,11 @@ export default function HomeworkPage() {
 
           {/* Submissions */}
           <div className="plato-card overflow-hidden">
-            <div className="p-4 border-b border-dark-border">
+            <div className="p-4 border-b border-dark-border flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground">Submissions & Grading</h3>
+              <span className="text-xs text-muted-foreground">
+                {viewHW.submissions.length}/{viewBatch?.studentIds.length || 0} submitted · {Math.max((viewBatch?.studentIds.length || 0) - viewHW.submissions.length, 0)} missing
+              </span>
             </div>
             <div className="divide-y divide-dark-border/50">
               {(viewBatch?.studentIds || []).map((studentId) => {
@@ -209,7 +225,7 @@ export default function HomeworkPage() {
         </div>
       )}
 
-      <Modal open={showModal} onClose={() => setShowModal(false)} title="Assign Homework">
+      <Modal open={showModal} onClose={() => { setShowModal(false); setErrors({}) }} title="Assign Homework">
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Batch</label>
@@ -219,7 +235,8 @@ export default function HomeworkPage() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Title</label>
-            <input className="plato-input" placeholder="e.g. Newton's Laws — Problem Set 3" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            <input className={fieldInputClass(errors.title)} placeholder="e.g. Newton's Laws — Problem Set 3" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            <FieldError message={errors.title} />
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Instructions</label>
@@ -228,15 +245,17 @@ export default function HomeworkPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Due Date</label>
-              <input type="date" className="plato-input" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
+              <input type="date" className={fieldInputClass(errors.dueDate)} value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
+              <FieldError message={errors.dueDate} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Max Marks</label>
-              <input type="number" className="plato-input" value={form.maxMarks} onChange={(e) => setForm({ ...form, maxMarks: e.target.value })} />
+              <input type="number" className={fieldInputClass(errors.maxMarks)} value={form.maxMarks} onChange={(e) => setForm({ ...form, maxMarks: e.target.value })} />
+              <FieldError message={errors.maxMarks} />
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button className="btn-ghost flex-1 justify-center border border-dark-border" onClick={() => setShowModal(false)}>Cancel</button>
+            <button className="btn-ghost flex-1 justify-center border border-dark-border" onClick={() => { setShowModal(false); setErrors({}) }}>Cancel</button>
             <button className="btn-primary flex-1 justify-center" onClick={handleCreate} disabled={!form.title || !form.dueDate}>Assign</button>
           </div>
         </div>

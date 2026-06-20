@@ -1,11 +1,16 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { CheckCircle2, Circle, Zap, Building2, CreditCard, Mail, MessageSquare, Brain, FileText, HardDrive } from 'lucide-react'
+import { CheckCircle2, Circle, Zap, Building2, CreditCard, Mail, MessageSquare, Brain, FileText, HardDrive, ShieldAlert, Smartphone } from 'lucide-react'
+import type { GoLiveConfig } from '@/types'
+
+// All GoLiveConfig keys except the one boolean toggle, which is managed separately
+// from the generic text-field form below.
+type GoLiveTextKey = keyof Omit<GoLiveConfig, 'studentProSyncEnabled'>
 
 interface SetupSection {
   id: string
-  icon: React.ReactNode
+  icon: ReactNode
   title: string
   description: string
   fields: Array<{ key: string; label: string; placeholder: string; type?: string }>
@@ -19,7 +24,7 @@ const SECTIONS: SetupSection[] = [
     description: 'Your company details displayed on invoices and communications',
     fields: [
       { key: 'companyName', label: 'Company Name', placeholder: "Plato's Planet Digital" },
-      { key: 'address', label: 'Address', placeholder: 'Dubai Marina, Tower 1' },
+      { key: 'address', label: 'Address', placeholder: 'SMJ-2, Damascus Street, Al Qusais' },
       { key: 'phone', label: 'Phone', placeholder: '+971 4 XXX XXXX' },
       { key: 'email', label: 'Email', placeholder: 'hello@company.ae' },
       { key: 'website', label: 'Website', placeholder: 'https://company.ae' },
@@ -79,6 +84,15 @@ const SECTIONS: SetupSection[] = [
     ],
   },
   {
+    id: 'mobile',
+    icon: <Smartphone size={20} />,
+    title: 'StudentPro Mobile App',
+    description: 'Sync data with the StudentPro mobile app (Google Play & App Store) used by students and parents',
+    fields: [
+      { key: 'studentProApiKey', label: 'StudentPro Sync API Key', placeholder: 'sp_xxx...', type: 'password' },
+    ],
+  },
+  {
     id: 'legal',
     icon: <FileText size={20} />,
     title: 'Legal & Compliance',
@@ -91,9 +105,20 @@ const SECTIONS: SetupSection[] = [
   },
 ]
 
+const SECTION_FIELD_KEYS: Record<string, GoLiveTextKey[]> = {
+  payment: ['stripeKey', 'stripePublic'],
+  storage: ['s3Bucket', 's3Region', 's3AccessKey'],
+  email: ['sendgridKey', 'fromEmail', 'fromName'],
+  whatsapp: ['wapiToken', 'wapiPhoneId'],
+  ai: ['anthropicKey', 'openaiKey'],
+  mobile: ['studentProApiKey'],
+  legal: ['privacyUrl', 'termsUrl', 'refundUrl'],
+}
+
 export default function GoLivePage() {
-  const { settings, updateSettings } = useAppStore()
+  const { settings, updateSettings, goLiveConfig, updateGoLiveConfig } = useAppStore()
   const [activeSection, setActiveSection] = useState('business')
+  const { studentProSyncEnabled, ...textConfig } = goLiveConfig
   const [formData, setFormData] = useState<Record<string, string>>({
     companyName: settings.companyName,
     address: settings.address,
@@ -101,8 +126,16 @@ export default function GoLivePage() {
     email: settings.email,
     website: settings.website,
     vatNumber: settings.vatNumber || '',
+    ...textConfig,
   })
-  const [saved, setSaved] = useState<Record<string, boolean>>({})
+  const [syncEnabled, setSyncEnabled] = useState(studentProSyncEnabled)
+  const [saved, setSaved] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {}
+    Object.entries(SECTION_FIELD_KEYS).forEach(([sectionId, keys]) => {
+      if (keys.some((k) => goLiveConfig[k])) initial[sectionId] = true
+    })
+    return initial
+  })
 
   const handleSave = (sectionId: string) => {
     if (sectionId === 'business') {
@@ -114,9 +147,15 @@ export default function GoLivePage() {
         website: formData.website,
         vatNumber: formData.vatNumber,
       })
-    }
-    if (sectionId === 'whatsapp' && formData.wapiToken) {
-      updateSettings({ whatsappEnabled: true })
+    } else {
+      const keys = SECTION_FIELD_KEYS[sectionId] || []
+      const updates: Partial<GoLiveConfig> = {}
+      keys.forEach((k) => { updates[k] = formData[k] || '' })
+      if (sectionId === 'mobile') updates.studentProSyncEnabled = syncEnabled
+      updateGoLiveConfig(updates)
+      if (sectionId === 'whatsapp' && formData.wapiToken) {
+        updateSettings({ whatsappEnabled: true })
+      }
     }
     setSaved({ ...saved, [sectionId]: true })
   }
@@ -145,6 +184,13 @@ export default function GoLivePage() {
           </button>
         }
       />
+
+      <div className="flex items-start gap-3 p-4 rounded-2xl bg-[#FF6B7A]/5 border border-[#FF6B7A]/20">
+        <ShieldAlert size={18} className="text-[#FF6B7A] flex-shrink-0 mt-0.5" />
+        <p className="text-sm text-[#FF6B7A]/90">
+          <strong>Demo mode.</strong> Values entered below are stored unencrypted in this browser's local storage — they are not sent anywhere and are not secure for real secrets. Do not enter real production API keys, tokens, or credentials here. Once a real backend exists, these must move to server-side environment variables or a secrets manager.
+        </p>
+      </div>
 
       {settings.isLive && (
         <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#00FFA3]/5 border border-[#00FFA3]/20">
@@ -216,6 +262,22 @@ export default function GoLivePage() {
                   />
                 </div>
               ))}
+
+              {section.id === 'mobile' && (
+                <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Enable Sync</p>
+                    <p className="text-xs text-muted-foreground">Push attendance, homework, and fee data to the StudentPro app</p>
+                  </div>
+                  <button
+                    onClick={() => setSyncEnabled(!syncEnabled)}
+                    className="w-11 h-6 rounded-full transition-colors relative flex-shrink-0"
+                    style={{ background: syncEnabled ? '#00FFA3' : 'rgba(255,255,255,0.12)' }}
+                  >
+                    <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all" style={{ left: syncEnabled ? 22 : 2 }} />
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-3 mt-6 pt-5 border-t border-dark-border">

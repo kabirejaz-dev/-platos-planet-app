@@ -3,10 +3,16 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
 import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
-import { formatDate, gradeFromPercentage, getGradeColor } from '@/lib/utils'
+import { gradeFromPercentage, getGradeColor } from '@/lib/utils'
 import { Link } from 'react-router-dom'
-import { BookOpen, BarChart3, PenTool, ShieldCheck, ArrowRight, TrendingUp, TrendingDown } from 'lucide-react'
+import { BookOpen, BarChart3, PenTool, ShieldCheck, ArrowRight } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+
+const SUBJECT_CODE: Record<string, string> = {
+  Physics: 'Phy', Chemistry: 'Che', Biology: 'Bio', Mathematics: 'Mat', English: 'Eng',
+  'Business Studies': 'Bus', Accounting: 'Acc', 'Computer Science': 'CS', Economics: 'Eco',
+  History: 'His', Geography: 'Geo', Arabic: 'Ara', French: 'Fre',
+}
 
 export default function CoordinatorDashboard() {
   const { assessments, batches, students, teachers, homework } = useAppStore()
@@ -26,7 +32,8 @@ export default function CoordinatorDashboard() {
   }, {})
 
   const subjectData = Object.entries(avgBySubject).map(([subject, { total, count }]) => ({
-    subject: subject.slice(0, 6),
+    subject: SUBJECT_CODE[subject] || subject.slice(0, 3),
+    fullName: subject,
     avg: Math.round(total / count),
   })).sort((a, b) => b.avg - a.avg)
 
@@ -64,7 +71,11 @@ export default function CoordinatorDashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="#1E2940" />
               <XAxis dataKey="subject" tick={{ fill: '#6B7280', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: '#6B7280', fontSize: 11 }} domain={[0, 100]} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1E2940', borderRadius: 12, fontSize: 12 }} formatter={(v: number) => [`${v}%`, 'Average']} />
+              <Tooltip
+                contentStyle={{ background: '#111827', border: '1px solid #1E2940', borderRadius: 12, fontSize: 12 }}
+                formatter={(v: number) => [`${v}%`, 'Average']}
+                labelFormatter={(label: string) => subjectData.find((d) => d.subject === label)?.fullName || label}
+              />
               <Bar dataKey="avg" fill="#7B61FF" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

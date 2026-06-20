@@ -24,6 +24,7 @@ const ROLE_PAGES: Record<string, Array<{ label: string; path: string; icon: Reac
     { label: 'Users', path: '/super-admin/users', icon: <Users size={14} /> },
     { label: 'Finance', path: '/super-admin/finance', icon: <DollarSign size={14} /> },
     { label: 'Go Live Setup', path: '/super-admin/go-live', icon: <Settings size={14} /> },
+    { label: 'Go-Live Command Centre', path: '/super-admin/go-live-status', icon: <Settings size={14} /> },
   ],
   branch_admin: [
     { label: 'Dashboard', path: '/branch-admin', icon: <LayoutDashboard size={14} /> },
@@ -183,7 +184,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                     autoFocus
                   />
                   {search && (
-                    <button onClick={() => setSearch('')} className="text-white/25 hover:text-white/60 transition-colors">
+                    <button onClick={() => setSearch('')} aria-label="Clear search" className="text-white/25 hover:text-white/60 transition-colors">
                       <X size={14} />
                     </button>
                   )}

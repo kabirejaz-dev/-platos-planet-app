@@ -1,29 +1,44 @@
+import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
 import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
-import { formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
+import { formatCurrency, formatDate, getStatusColor, getLastNMonths } from '@/lib/utils'
 import { Link } from 'react-router-dom'
-import { DollarSign, AlertCircle, TrendingUp, FileText, ArrowRight, CheckCircle2 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
-
-const monthlyData = [
-  { month: 'Jan', collected: 48000, outstanding: 8000 },
-  { month: 'Feb', collected: 52000, outstanding: 6500 },
-  { month: 'Mar', collected: 61000, outstanding: 9000 },
-  { month: 'Apr', collected: 55000, outstanding: 7200 },
-  { month: 'May', collected: 67000, outstanding: 5800 },
-  { month: 'Jun', collected: 72000, outstanding: 11000 },
-]
+import { AlertCircle, TrendingUp, FileText, ArrowRight, CheckCircle2, Info } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { CreateInvoiceModal } from '@/components/finance/CreateInvoiceModal'
+import { RecordPaymentModal } from '@/components/finance/RecordPaymentModal'
+import { InvoiceDetailModal } from '@/components/finance/InvoiceDetailModal'
 
 export default function FinanceDashboard() {
   const { invoices, students, settings } = useAppStore()
+  const [showCreateInvoice, setShowCreateInvoice] = useState(false)
+  const [recordPaymentFor, setRecordPaymentFor] = useState<string | null>(null)
+  const [viewInvoiceFor, setViewInvoiceFor] = useState<string | null>(null)
 
-  const totalCollected = invoices.filter((i) => i.status === 'paid').reduce((s, i) => s + i.totalAmount, 0)
-  const totalOutstanding = invoices.filter((i) => ['pending', 'overdue'].includes(i.status)).reduce((s, i) => s + i.totalAmount, 0)
+  const totalCollected = invoices.reduce((s, i) => s + (i.status === 'paid' ? i.totalAmount : i.paidAmount || 0), 0)
+  const totalOutstanding = invoices.reduce((s, i) => {
+    if (i.status === 'pending' || i.status === 'overdue') return s + i.totalAmount
+    if (i.status === 'partial') return s + (i.totalAmount - (i.paidAmount || 0))
+    return s
+  }, 0)
   const overdueCount = invoices.filter((i) => i.status === 'overdue').length
   const collectionRate = invoices.length > 0 ? Math.round((invoices.filter((i) => i.status === 'paid').length / invoices.length) * 100) : 0
+
+  // Monthly collections, computed from real invoices over a rolling 6-month window
+  const last6Months = getLastNMonths(6)
+  const monthMap: Record<string, { collected: number; outstanding: number }> = {}
+  last6Months.forEach((m) => { monthMap[m.key] = { collected: 0, outstanding: 0 } })
+  invoices.forEach((i) => {
+    const d = new Date(i.status === 'paid' ? (i.paidDate || i.issuedDate) : i.issuedDate)
+    const key = `${d.getFullYear()}-${d.getMonth()}`
+    if (!(key in monthMap)) return
+    if (i.status === 'paid') monthMap[key].collected += i.totalAmount
+    else monthMap[key].outstanding += i.totalAmount
+  })
+  const monthlyData = last6Months.map((m) => ({ month: m.label, ...monthMap[m.key] }))
 
   return (
     <div className="space-y-6">
@@ -32,9 +47,9 @@ export default function FinanceDashboard() {
         subtitle={`${settings.currency} · ${settings.academicYear}`}
         badge={<DemoBadge />}
         actions={
-          <Link to="/finance/invoices" className="btn-primary">
+          <button className="btn-primary" onClick={() => setShowCreateInvoice(true)}>
             <FileText size={16} /> Create Invoice
-          </Link>
+          </button>
         }
       />
 
@@ -51,6 +66,13 @@ export default function FinanceDashboard() {
         <StatCard label="Outstanding" value={formatCurrency(totalOutstanding, settings.currency)} icon={<AlertCircle size={18} />} color="#FF6B7A" />
         <StatCard label="Collection Rate" value={`${collectionRate}%`} icon={<TrendingUp size={18} />} color="#4D7CFF" sub={`${invoices.filter((i) => i.status === 'paid').length} of ${invoices.length} invoices`} />
         <StatCard label="Overdue" value={overdueCount} icon={<AlertCircle size={18} />} color="#FF6B7A" demo={false} />
+      </div>
+
+      <div className="flex items-center gap-3 p-3 rounded-xl bg-white/3 border border-dark-border/50">
+        <Info size={15} className="text-muted-foreground flex-shrink-0" />
+        <p className="text-xs text-muted-foreground">
+          Looking for sibling/multi-child discounts? Those are reviewed and approved by the Sales & Admissions team under Scholarships, not in this module.
+        </p>
       </div>
 
       {/* Monthly chart */}
@@ -103,11 +125,17 @@ export default function FinanceDashboard() {
                     <td>
                       <div className="flex items-center gap-2">
                         {inv.status !== 'paid' && (
-                          <Link to="/finance/collection" className="text-xs px-3 py-1.5 rounded-lg bg-[#00FFA3]/10 text-[#00FFA3] hover:bg-[#00FFA3]/20 transition-colors">
+                          <button
+                            onClick={() => setRecordPaymentFor(inv.id)}
+                            className="text-xs px-3 py-1.5 rounded-lg bg-[#00FFA3]/10 text-[#00FFA3] hover:bg-[#00FFA3]/20 transition-colors"
+                          >
                             Record Payment
-                          </Link>
+                          </button>
                         )}
-                        <button className="text-xs px-3 py-1.5 rounded-lg border border-dark-border text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
+                        <button
+                          onClick={() => setViewInvoiceFor(inv.id)}
+                          className="text-xs px-3 py-1.5 rounded-lg border border-dark-border text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                        >
                           View
                         </button>
                       </div>
@@ -119,6 +147,21 @@ export default function FinanceDashboard() {
           </table>
         </div>
       </div>
+
+      <CreateInvoiceModal open={showCreateInvoice} onClose={() => setShowCreateInvoice(false)} />
+
+      {recordPaymentFor && (
+        <RecordPaymentModal open onClose={() => setRecordPaymentFor(null)} invoiceId={recordPaymentFor} />
+      )}
+
+      {viewInvoiceFor && (
+        <InvoiceDetailModal
+          open
+          onClose={() => setViewInvoiceFor(null)}
+          invoiceId={viewInvoiceFor}
+          onRecordPayment={() => { setRecordPaymentFor(viewInvoiceFor); setViewInvoiceFor(null) }}
+        />
+      )}
     </div>
   )
 }

@@ -1,7 +1,10 @@
 import type {
   Branch, Student, Teacher, Parent, Batch, AttendanceRecord,
   Homework, Assessment, Lead, Invoice, Message, Meeting, Notification,
-  SystemSettings, Achievement, User, AIConversation, AttendanceStatus
+  SystemSettings, Achievement, User, AIConversation, AttendanceStatus,
+  Campaign, ScholarshipApplication, AuditLogEntry, BranchRequest, ClassNote,
+  SyllabusPlan, TeacherReview, Intervention, PaymentPlan, Expense, StudyPlan,
+  GoLiveConfig, Programme, LessonLog
 } from '@/types';
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -9,13 +12,17 @@ import type {
 const today = new Date();
 const fmt = (d: Date) => d.toISOString().split('T')[0];
 const daysAgo = (n: number) => { const d = new Date(today); d.setDate(d.getDate() - n); return fmt(d); };
+// Builds an ISO datetime for a given Asia/Dubai (UTC+4) wall-clock time, so any
+// timezone-aware renderer correctly shows e.g. "4:00 PM" regardless of host TZ.
+const atTime = (n: number, hourUAE: number, minuteUAE = 0) =>
+  `${daysAgo(n)}T${String(hourUAE - 4).padStart(2, '0')}:${String(minuteUAE).padStart(2, '0')}:00.000Z`;
 
 // ── Branches ──────────────────────────────────────────────────────────────────
 
 export const branches: Branch[] = [
-  { id: 'br-001', name: 'Dubai Marina Centre', address: 'Marina Walk, Level 2', city: 'Dubai', country: 'UAE', phone: '+971 4 123 4567', email: 'marina@platosplanet.ae', adminId: 'u-ba-001', isActive: true, capacity: 200, establishedYear: 2020 },
-  { id: 'br-002', name: 'Jumeirah Learning Hub', address: 'Jumeirah Beach Road, Block 3', city: 'Dubai', country: 'UAE', phone: '+971 4 234 5678', email: 'jumeirah@platosplanet.ae', adminId: 'u-ba-002', isActive: true, capacity: 150, establishedYear: 2021 },
-  { id: 'br-003', name: 'Abu Dhabi Main Campus', address: 'Corniche Road, Tower 7', city: 'Abu Dhabi', country: 'UAE', phone: '+971 2 345 6789', email: 'abudhabi@platosplanet.ae', adminId: 'u-ba-003', isActive: true, capacity: 180, establishedYear: 2022 },
+  { id: 'br-001', name: 'Al Qusais', address: '305 & 312, SMJ-2, Damascus Street, Al Qusais', city: 'Dubai', country: 'UAE', phone: '+971 4 123 4567', email: 'alqusais@platosplanet.ae', adminId: 'u-ba-001', isActive: true, capacity: 40, establishedYear: 2015 },
+  { id: 'br-002', name: 'Al Majaz', address: 'M-02, Abdul Aziz Building, King Faisal Street, Al Majaz', city: 'Sharjah', country: 'UAE', phone: '+971 6 234 5678', email: 'almajaz@platosplanet.ae', adminId: 'u-ba-002', isActive: true, capacity: 35, establishedYear: 2018 },
+  { id: 'br-003', name: 'JLT (Coming Soon)', address: 'Jumeirah Lake Towers — address to be confirmed', city: 'Dubai', country: 'UAE', phone: '', email: 'jlt@platosplanet.ae', adminId: 'u-ba-003', isActive: false, capacity: 50, establishedYear: 2026 },
 ];
 
 // ── Users ─────────────────────────────────────────────────────────────────────
@@ -23,75 +30,75 @@ export const branches: Branch[] = [
 export const users: User[] = [
   { id: 'u-sa-001', name: 'Khalid Al Rashid', email: 'khalid@platosplanet.ae', phone: '+971 50 111 2222', role: 'super_admin', isActive: true, createdAt: '2020-01-01', lastLogin: new Date().toISOString() },
   { id: 'u-ba-001', name: 'Fatima Hassan', email: 'fatima@platosplanet.ae', phone: '+971 50 222 3333', role: 'branch_admin', branchId: 'br-001', isActive: true, createdAt: '2020-06-01' },
-  { id: 'u-ba-002', name: 'Omar Malik', email: 'omar@platosplanet.ae', phone: '+971 50 333 4444', role: 'branch_admin', branchId: 'br-002', isActive: true, createdAt: '2021-06-01' },
-  { id: 'u-ba-003', name: 'Aisha Al Blooshi', email: 'aisha@platosplanet.ae', phone: '+971 50 444 5555', role: 'branch_admin', branchId: 'br-003', isActive: true, createdAt: '2022-01-01' },
+  { id: 'u-ba-002', name: 'Staff 2', email: 'staff2@platosplanet.ae', phone: '+971 50 333 4444', role: 'branch_admin', branchId: 'br-002', isActive: true, createdAt: '2021-06-01' },
+  { id: 'u-ba-003', name: 'Staff 3', email: 'staff3@platosplanet.ae', phone: '+971 50 444 5555', role: 'branch_admin', branchId: 'br-003', isActive: true, createdAt: '2022-01-01' },
   { id: 'u-sl-001', name: 'Layla Nasser', email: 'layla@platosplanet.ae', phone: '+971 50 555 6666', role: 'sales', branchId: 'br-001', isActive: true, createdAt: '2021-01-01' },
   { id: 'u-tc-001', name: 'Dr. Sarah Mitchell', email: 'sarah@platosplanet.ae', phone: '+971 50 666 7777', role: 'teacher', branchId: 'br-001', isActive: true, createdAt: '2020-09-01' },
-  { id: 'u-tc-002', name: 'Mr. Rajan Pillai', email: 'rajan@platosplanet.ae', phone: '+971 50 777 8888', role: 'teacher', branchId: 'br-001', isActive: true, createdAt: '2020-09-01' },
-  { id: 'u-tc-003', name: 'Ms. Emily Chen', email: 'emily@platosplanet.ae', phone: '+971 50 888 9999', role: 'teacher', branchId: 'br-002', isActive: true, createdAt: '2021-09-01' },
-  { id: 'u-tc-004', name: 'Ms. Nadia Al Hashimi', email: 'nadia@platosplanet.ae', phone: '+971 50 910 1112', role: 'teacher', branchId: 'br-001', isActive: true, createdAt: '2022-09-01' },
-  { id: 'u-tc-005', name: 'Mr. James O\'Brien', email: 'james@platosplanet.ae', phone: '+971 50 112 1314', role: 'teacher', branchId: 'br-003', isActive: true, createdAt: '2022-09-01' },
-  { id: 'u-tc-006', name: 'Dr. Ananya Krishnan', email: 'ananya@platosplanet.ae', phone: '+971 50 131 4151', role: 'teacher', branchId: 'br-003', isActive: true, createdAt: '2023-01-01' },
+  { id: 'u-tc-002', name: 'Staff 4', email: 'staff4@platosplanet.ae', phone: '+971 50 777 8888', role: 'teacher', branchId: 'br-001', isActive: true, createdAt: '2020-09-01' },
+  { id: 'u-tc-003', name: 'Staff 5', email: 'staff5@platosplanet.ae', phone: '+971 50 888 9999', role: 'teacher', branchId: 'br-002', isActive: true, createdAt: '2021-09-01' },
+  { id: 'u-tc-004', name: 'Staff 1', email: 'staff1@platosplanet.ae', phone: '+971 50 910 1112', role: 'teacher', branchId: 'br-001', isActive: true, createdAt: '2022-09-01' },
+  { id: 'u-tc-005', name: 'Staff 6', email: 'staff6@platosplanet.ae', phone: '+971 50 112 1314', role: 'teacher', branchId: 'br-002', isActive: true, createdAt: '2022-09-01' },
+  { id: 'u-tc-006', name: 'Staff 7', email: 'staff7@platosplanet.ae', phone: '+971 50 131 4151', role: 'teacher', branchId: 'br-002', isActive: true, createdAt: '2023-01-01' },
   { id: 'u-co-001', name: 'Dr. Yusuf Ibrahim', email: 'yusuf@platosplanet.ae', phone: '+971 50 999 0000', role: 'coordinator', branchId: 'br-001', isActive: true, createdAt: '2020-09-01' },
   { id: 'u-fi-001', name: 'Priya Sharma', email: 'priya@platosplanet.ae', phone: '+971 50 100 2000', role: 'finance', branchId: 'br-001', isActive: true, createdAt: '2020-09-01' },
   { id: 'u-pr-001', name: 'Mohammed Al Farsi', email: 'mfarsi@gmail.com', phone: '+971 50 200 3000', role: 'parent', isActive: true, createdAt: '2021-09-01' },
-  { id: 'u-pr-002', name: 'Jennifer Thompson', email: 'jennifer@gmail.com', phone: '+971 50 300 4000', role: 'parent', isActive: true, createdAt: '2022-01-01' },
-  { id: 'u-pr-003', name: 'Hassan Al Khalil', email: 'hkhalil@gmail.com', phone: '+971 50 401 5001', role: 'parent', isActive: true, createdAt: '2022-09-01' },
-  { id: 'u-pr-004', name: 'Meera Iyer', email: 'meera.iyer@gmail.com', phone: '+971 55 502 6002', role: 'parent', isActive: true, createdAt: '2023-01-01' },
-  { id: 'u-pr-005', name: 'David Johnson', email: 'djohnson@icloud.com', phone: '+971 52 603 7003', role: 'parent', isActive: true, createdAt: '2023-09-01' },
+  { id: 'u-pr-002', name: 'Parent 2', email: 'parent2@example.com', phone: '+971 50 300 4000', role: 'parent', isActive: true, createdAt: '2022-01-01' },
+  { id: 'u-pr-003', name: 'Parent 10', email: 'parent10@example.com', phone: '+971 50 401 5001', role: 'parent', isActive: true, createdAt: '2022-09-01' },
+  { id: 'u-pr-004', name: 'Parent 7', email: 'parent7@example.com', phone: '+971 55 502 6002', role: 'parent', isActive: true, createdAt: '2023-01-01' },
+  { id: 'u-pr-005', name: 'Parent 4', email: 'parent4@example.com', phone: '+971 52 603 7003', role: 'parent', isActive: true, createdAt: '2023-09-01' },
   { id: 'u-st-001', name: 'Zaid Al Farsi', email: 'zaid@student.platosplanet.ae', role: 'student', branchId: 'br-001', isActive: true, createdAt: '2021-09-01' },
-  { id: 'u-st-002', name: 'Emma Thompson', email: 'emma@student.platosplanet.ae', role: 'student', branchId: 'br-001', isActive: true, createdAt: '2022-01-01' },
-  { id: 'u-st-003', name: 'Aryan Patel', email: 'aryan@student.platosplanet.ae', role: 'student', branchId: 'br-002', isActive: true, createdAt: '2022-01-01' },
-  { id: 'u-st-004', name: 'Nour Al Zaabi', email: 'nour@student.platosplanet.ae', role: 'student', branchId: 'br-001', isActive: true, createdAt: '2023-09-01' },
-  { id: 'u-st-005', name: 'Rayan Al Khalil', email: 'rayan@student.platosplanet.ae', role: 'student', branchId: 'br-001', isActive: true, createdAt: '2022-09-01' },
-  { id: 'u-st-006', name: 'Sofia Iyer', email: 'sofia@student.platosplanet.ae', role: 'student', branchId: 'br-002', isActive: true, createdAt: '2023-01-01' },
-  { id: 'u-st-007', name: 'Mia Johnson', email: 'mia@student.platosplanet.ae', role: 'student', branchId: 'br-001', isActive: true, createdAt: '2023-09-01' },
-  { id: 'u-st-008', name: 'Omar Khalid', email: 'omar.k@student.platosplanet.ae', role: 'student', branchId: 'br-003', isActive: true, createdAt: '2022-09-01' },
-  { id: 'u-st-009', name: 'Lina Al Rashid', email: 'lina@student.platosplanet.ae', role: 'student', branchId: 'br-003', isActive: true, createdAt: '2023-01-01' },
-  { id: 'u-st-010', name: 'Aditya Sharma', email: 'aditya@student.platosplanet.ae', role: 'student', branchId: 'br-002', isActive: true, createdAt: '2023-09-01' },
-  { id: 'u-st-011', name: 'Mariam Al Suwaidi', email: 'mariam@student.platosplanet.ae', role: 'student', branchId: 'br-001', isActive: true, createdAt: '2021-09-01' },
-  { id: 'u-st-012', name: 'Lucas Andrade', email: 'lucas@student.platosplanet.ae', role: 'student', branchId: 'br-003', isActive: true, createdAt: '2022-01-01' },
+  { id: 'u-st-002', name: 'Student 2', email: 'student2@student.platosplanet.ae', role: 'student', branchId: 'br-001', isActive: true, createdAt: '2022-01-01' },
+  { id: 'u-st-003', name: 'Student 5', email: 'student5@student.platosplanet.ae', role: 'student', branchId: 'br-002', isActive: true, createdAt: '2022-01-01' },
+  { id: 'u-st-004', name: 'Student 9', email: 'student9@student.platosplanet.ae', role: 'student', branchId: 'br-001', isActive: true, createdAt: '2023-09-01' },
+  { id: 'u-st-005', name: 'Student 10', email: 'student10@student.platosplanet.ae', role: 'student', branchId: 'br-001', isActive: true, createdAt: '2022-09-01' },
+  { id: 'u-st-006', name: 'Student 7', email: 'student7@student.platosplanet.ae', role: 'student', branchId: 'br-002', isActive: true, createdAt: '2023-01-01' },
+  { id: 'u-st-007', name: 'Student 4', email: 'student4@student.platosplanet.ae', role: 'student', branchId: 'br-001', isActive: true, createdAt: '2023-09-01' },
+  { id: 'u-st-008', name: 'Student 6', email: 'student6@student.platosplanet.ae', role: 'student', branchId: 'br-002', isActive: true, createdAt: '2022-09-01' },
+  { id: 'u-st-009', name: 'Student 11', email: 'student11@student.platosplanet.ae', role: 'student', branchId: 'br-002', isActive: true, createdAt: '2023-01-01' },
+  { id: 'u-st-010', name: 'Student 3', email: 'student3@student.platosplanet.ae', role: 'student', branchId: 'br-002', isActive: true, createdAt: '2023-09-01' },
+  { id: 'u-st-011', name: 'Student 12', email: 'student12@student.platosplanet.ae', role: 'student', branchId: 'br-001', isActive: true, createdAt: '2021-09-01' },
+  { id: 'u-st-012', name: 'Student 8', email: 'student8@student.platosplanet.ae', role: 'student', branchId: 'br-002', isActive: true, createdAt: '2022-01-01' },
 ];
 
 // ── Teachers ──────────────────────────────────────────────────────────────────
 
 export const teachers: Teacher[] = [
   { id: 'tc-001', userId: 'u-tc-001', name: 'Dr. Sarah Mitchell', email: 'sarah@platosplanet.ae', phone: '+971 50 666 7777', branchId: 'br-001', subjects: ['Physics', 'Mathematics'], curriculums: ['IGCSE', 'A-Level'], qualification: 'PhD Physics, UCL', experience: 8, rating: 4.9, isActive: true, batchIds: ['ba-001', 'ba-002', 'ba-006'] },
-  { id: 'tc-002', userId: 'u-tc-002', name: 'Mr. Rajan Pillai', email: 'rajan@platosplanet.ae', phone: '+971 50 777 8888', branchId: 'br-001', subjects: ['Chemistry', 'Biology'], curriculums: ['IGCSE', 'CBSE'], qualification: 'MSc Chemistry, IIT Bombay', experience: 6, rating: 4.7, isActive: true, batchIds: ['ba-003', 'ba-005'] },
-  { id: 'tc-003', userId: 'u-tc-003', name: 'Ms. Emily Chen', email: 'emily@platosplanet.ae', phone: '+971 50 888 9999', branchId: 'br-002', subjects: ['Mathematics', 'Computer Science'], curriculums: ['IGCSE', 'A-Level', 'CBSE'], qualification: 'MSc Computer Science, NUS', experience: 5, rating: 4.8, isActive: true, batchIds: ['ba-004', 'ba-008'] },
-  { id: 'tc-004', userId: 'u-tc-004', name: 'Ms. Nadia Al Hashimi', email: 'nadia@platosplanet.ae', phone: '+971 50 910 1112', branchId: 'br-001', subjects: ['English', 'History'], curriculums: ['IGCSE', 'A-Level'], qualification: 'MA English Literature, AUS', experience: 7, rating: 4.6, isActive: true, batchIds: ['ba-007'] },
-  { id: 'tc-005', userId: 'u-tc-005', name: 'Mr. James O\'Brien', email: 'james@platosplanet.ae', phone: '+971 50 112 1314', branchId: 'br-003', subjects: ['Biology', 'Chemistry'], curriculums: ['IGCSE', 'A-Level'], qualification: 'MSc Biochemistry, Trinity College Dublin', experience: 9, rating: 4.8, isActive: true, batchIds: ['ba-009'] },
-  { id: 'tc-006', userId: 'u-tc-006', name: 'Dr. Ananya Krishnan', email: 'ananya@platosplanet.ae', phone: '+971 50 131 4151', branchId: 'br-003', subjects: ['Mathematics', 'Economics'], curriculums: ['A-Level', 'IB'], qualification: 'PhD Economics, LSE', experience: 11, rating: 4.9, isActive: true, batchIds: ['ba-010'] },
+  { id: 'tc-002', userId: 'u-tc-002', name: 'Staff 4', email: 'staff4@platosplanet.ae', phone: '+971 50 777 8888', branchId: 'br-001', subjects: ['Chemistry', 'Biology'], curriculums: ['IGCSE', 'CBSE'], qualification: 'MSc Chemistry, IIT Bombay', experience: 6, rating: 4.7, isActive: true, batchIds: ['ba-003', 'ba-005'] },
+  { id: 'tc-003', userId: 'u-tc-003', name: 'Staff 5', email: 'staff5@platosplanet.ae', phone: '+971 50 888 9999', branchId: 'br-002', subjects: ['Mathematics', 'Computer Science'], curriculums: ['IGCSE', 'A-Level', 'CBSE'], qualification: 'MSc Computer Science, NUS', experience: 5, rating: 4.8, isActive: true, batchIds: ['ba-004', 'ba-008'] },
+  { id: 'tc-004', userId: 'u-tc-004', name: 'Staff 1', email: 'staff1@platosplanet.ae', phone: '+971 50 910 1112', branchId: 'br-001', subjects: ['English', 'History'], curriculums: ['IGCSE', 'A-Level'], qualification: 'MA English Literature, AUS', experience: 7, rating: 4.6, isActive: true, batchIds: ['ba-007'] },
+  { id: 'tc-005', userId: 'u-tc-005', name: 'Staff 6', email: 'staff6@platosplanet.ae', phone: '+971 50 112 1314', branchId: 'br-002', subjects: ['Biology', 'Chemistry'], curriculums: ['IGCSE', 'A-Level'], qualification: 'MSc Biochemistry, Trinity College Dublin', experience: 9, rating: 4.8, isActive: true, batchIds: ['ba-009'] },
+  { id: 'tc-006', userId: 'u-tc-006', name: 'Staff 7', email: 'staff7@platosplanet.ae', phone: '+971 50 131 4151', branchId: 'br-002', subjects: ['Mathematics', 'Economics'], curriculums: ['A-Level', 'IB'], qualification: 'PhD Economics, LSE', experience: 11, rating: 4.9, isActive: true, batchIds: ['ba-010'] },
 ];
 
 // ── Parents ───────────────────────────────────────────────────────────────────
 
 export const parents: Parent[] = [
-  { id: 'pr-001', userId: 'u-pr-001', name: 'Mohammed Al Farsi', email: 'mfarsi@gmail.com', phone: '+971 50 200 3000', studentIds: ['st-001'], branchId: 'br-001' },
-  { id: 'pr-002', userId: 'u-pr-002', name: 'Jennifer Thompson', email: 'jennifer@gmail.com', phone: '+971 50 300 4000', studentIds: ['st-002'], branchId: 'br-001' },
-  { id: 'pr-003', userId: 'u-pr-003', name: 'Hassan Al Khalil', email: 'hkhalil@gmail.com', phone: '+971 50 401 5001', studentIds: ['st-005'], branchId: 'br-001' },
-  { id: 'pr-004', userId: 'u-pr-004', name: 'Meera Iyer', email: 'meera.iyer@gmail.com', phone: '+971 55 502 6002', studentIds: ['st-006', 'st-010'], branchId: 'br-002' },
-  { id: 'pr-005', userId: 'u-pr-005', name: 'David Johnson', email: 'djohnson@icloud.com', phone: '+971 52 603 7003', studentIds: ['st-007'], branchId: 'br-001' },
-  { id: 'pr-006', name: 'Khalid Al Suwaidi', email: 'k.suwaidi@gmail.com', phone: '+971 50 704 8004', userId: 'u-pr-006', studentIds: ['st-011'], branchId: 'br-001' },
-  { id: 'pr-007', name: 'Carlos Andrade', email: 'carlos.andrade@gmail.com', phone: '+971 55 805 9005', userId: 'u-pr-007', studentIds: ['st-012'], branchId: 'br-003' },
-  { id: 'pr-008', name: 'Noura Al Rashid', email: 'n.alrashid@gmail.com', phone: '+971 50 906 0006', userId: 'u-pr-008', studentIds: ['st-008', 'st-009'], branchId: 'br-003' },
+  { id: 'pr-001', userId: 'u-pr-001', name: 'Mohammed Al Farsi', email: 'mfarsi@gmail.com', phone: '+971 50 200 3000', studentIds: ['st-001'], branchId: 'br-001', relationship: 'Father' },
+  { id: 'pr-002', userId: 'u-pr-002', name: 'Parent 2', email: 'parent2@example.com', phone: '+971 50 300 4000', studentIds: ['st-002'], branchId: 'br-001' },
+  { id: 'pr-003', userId: 'u-pr-003', name: 'Parent 10', email: 'parent10@example.com', phone: '+971 50 401 5001', studentIds: ['st-005'], branchId: 'br-001' },
+  { id: 'pr-004', userId: 'u-pr-004', name: 'Parent 7', email: 'parent7@example.com', phone: '+971 55 502 6002', studentIds: ['st-006', 'st-010'], branchId: 'br-002' },
+  { id: 'pr-005', userId: 'u-pr-005', name: 'Parent 4', email: 'parent4@example.com', phone: '+971 52 603 7003', studentIds: ['st-007'], branchId: 'br-001' },
+  { id: 'pr-006', name: 'Parent 12', email: 'parent12@example.com', phone: '+971 50 704 8004', userId: 'u-pr-006', studentIds: ['st-011'], branchId: 'br-001' },
+  { id: 'pr-007', name: 'Parent 8', email: 'parent8@example.com', phone: '+971 55 805 9005', userId: 'u-pr-007', studentIds: ['st-012'], branchId: 'br-002' },
+  { id: 'pr-008', name: 'Parent 6', email: 'parent6@example.com', phone: '+971 50 906 0006', userId: 'u-pr-008', studentIds: ['st-008', 'st-009'], branchId: 'br-002' },
 ];
 
 // ── Students ──────────────────────────────────────────────────────────────────
 
 export const students: Student[] = [
-  { id: 'st-001', userId: 'u-st-001', name: 'Zaid Al Farsi', email: 'zaid@student.platosplanet.ae', parentId: 'pr-001', branchId: 'br-001', curriculum: 'IGCSE', grade: 'Grade 10', enrollmentDate: '2021-09-01', status: 'active', xp: 3750, streak: 12, planet: 'Mars', subjects: ['Physics', 'Chemistry', 'Mathematics', 'Biology', 'English'], batchIds: ['ba-001', 'ba-003'] },
-  { id: 'st-002', userId: 'u-st-002', name: 'Emma Thompson', email: 'emma@student.platosplanet.ae', parentId: 'pr-002', branchId: 'br-001', curriculum: 'A-Level', grade: 'Year 12', enrollmentDate: '2022-01-01', status: 'active', xp: 6200, streak: 21, planet: 'Saturn', subjects: ['Mathematics', 'Physics', 'Computer Science'], batchIds: ['ba-001', 'ba-002'] },
-  { id: 'st-003', userId: 'u-st-003', name: 'Aryan Patel', email: 'aryan@student.platosplanet.ae', branchId: 'br-002', curriculum: 'CBSE', grade: 'Class 11', enrollmentDate: '2022-01-01', status: 'active', xp: 1800, streak: 5, planet: 'Earth', subjects: ['Chemistry', 'Biology', 'Mathematics'], batchIds: ['ba-003', 'ba-004'] },
-  { id: 'st-004', userId: 'u-st-004', name: 'Nour Al Zaabi', email: 'nour@student.platosplanet.ae', branchId: 'br-001', curriculum: 'IGCSE', grade: 'Grade 9', enrollmentDate: '2023-09-01', status: 'active', xp: 720, streak: 8, planet: 'Venus', subjects: ['Mathematics', 'English', 'Biology'], batchIds: ['ba-001', 'ba-007'] },
-  { id: 'st-005', userId: 'u-st-005', name: 'Rayan Al Khalil', email: 'rayan@student.platosplanet.ae', parentId: 'pr-003', branchId: 'br-001', curriculum: 'A-Level', grade: 'Year 13', enrollmentDate: '2022-09-01', status: 'active', xp: 14200, streak: 34, planet: 'Neptune', subjects: ['Mathematics', 'Physics', 'Economics'], batchIds: ['ba-002', 'ba-006'] },
-  { id: 'st-006', userId: 'u-st-006', name: 'Sofia Iyer', email: 'sofia@student.platosplanet.ae', parentId: 'pr-004', branchId: 'br-002', curriculum: 'CBSE', grade: 'Class 12', enrollmentDate: '2023-01-01', status: 'active', xp: 5100, streak: 15, planet: 'Jupiter', subjects: ['Chemistry', 'Biology', 'Mathematics'], batchIds: ['ba-004', 'ba-008'] },
-  { id: 'st-007', userId: 'u-st-007', name: 'Mia Johnson', email: 'mia@student.platosplanet.ae', parentId: 'pr-005', branchId: 'br-001', curriculum: 'IGCSE', grade: 'Grade 11', enrollmentDate: '2023-09-01', status: 'active', xp: 1400, streak: 6, planet: 'Earth', subjects: ['English', 'History', 'Biology'], batchIds: ['ba-005', 'ba-007'] },
-  { id: 'st-008', userId: 'u-st-008', name: 'Omar Khalid', email: 'omar.k@student.platosplanet.ae', parentId: 'pr-008', branchId: 'br-003', curriculum: 'A-Level', grade: 'Year 12', enrollmentDate: '2022-09-01', status: 'active', xp: 4600, streak: 18, planet: 'Jupiter', subjects: ['Biology', 'Chemistry', 'Mathematics'], batchIds: ['ba-009', 'ba-010'] },
-  { id: 'st-009', userId: 'u-st-009', name: 'Lina Al Rashid', email: 'lina@student.platosplanet.ae', parentId: 'pr-008', branchId: 'br-003', curriculum: 'IGCSE', grade: 'Grade 10', enrollmentDate: '2023-01-01', status: 'active', xp: 2200, streak: 9, planet: 'Earth', subjects: ['Mathematics', 'Physics', 'Economics'], batchIds: ['ba-009', 'ba-010'] },
-  { id: 'st-010', userId: 'u-st-010', name: 'Aditya Sharma', email: 'aditya@student.platosplanet.ae', parentId: 'pr-004', branchId: 'br-002', curriculum: 'CBSE', grade: 'Class 11', enrollmentDate: '2023-09-01', status: 'active', xp: 880, streak: 3, planet: 'Venus', subjects: ['Mathematics', 'Computer Science'], batchIds: ['ba-004', 'ba-008'] },
-  { id: 'st-011', userId: 'u-st-011', name: 'Mariam Al Suwaidi', email: 'mariam@student.platosplanet.ae', parentId: 'pr-006', branchId: 'br-001', curriculum: 'IGCSE', grade: 'Grade 10', enrollmentDate: '2021-09-01', status: 'active', xp: 9200, streak: 28, planet: 'Saturn', subjects: ['Mathematics', 'Physics', 'English', 'History'], batchIds: ['ba-001', 'ba-002', 'ba-007'] },
-  { id: 'st-012', userId: 'u-st-012', name: 'Lucas Andrade', email: 'lucas@student.platosplanet.ae', parentId: 'pr-007', branchId: 'br-003', curriculum: 'A-Level', grade: 'Year 13', enrollmentDate: '2022-01-01', status: 'suspended', xp: 2900, streak: 0, planet: 'Mars', subjects: ['Mathematics', 'Economics'], batchIds: ['ba-010'] },
+  { id: 'st-001', userId: 'u-st-001', name: 'Zaid Al Farsi', email: 'zaid@student.platosplanet.ae', parentId: 'pr-001', branchId: 'br-001', curriculum: 'IGCSE', grade: 'Grade 10', enrollmentDate: '2021-09-01', status: 'active', xp: 3750, streak: 12, planet: 'Mars', subjects: ['Physics', 'Chemistry', 'Mathematics', 'Biology', 'English'], batchIds: ['ba-001', 'ba-003'], dateOfBirth: '2010-03-14', nationality: 'Emirati', gender: 'Male' },
+  { id: 'st-002', userId: 'u-st-002', name: 'Student 2', email: 'student2@student.platosplanet.ae', parentId: 'pr-002', branchId: 'br-001', curriculum: 'A-Level', grade: 'Year 12', enrollmentDate: '2022-01-01', status: 'active', xp: 6200, streak: 21, planet: 'Saturn', subjects: ['Mathematics', 'Physics', 'Computer Science'], batchIds: ['ba-001', 'ba-002'] },
+  { id: 'st-003', userId: 'u-st-003', name: 'Student 5', email: 'student5@student.platosplanet.ae', branchId: 'br-002', curriculum: 'CBSE', grade: 'Class 11', enrollmentDate: '2022-01-01', status: 'active', xp: 1800, streak: 5, planet: 'Earth', subjects: ['Chemistry', 'Biology', 'Mathematics'], batchIds: ['ba-003', 'ba-004'] },
+  { id: 'st-004', userId: 'u-st-004', name: 'Student 9', email: 'student9@student.platosplanet.ae', branchId: 'br-001', curriculum: 'IGCSE', grade: 'Grade 9', enrollmentDate: '2023-09-01', status: 'active', xp: 720, streak: 8, planet: 'Venus', subjects: ['Mathematics', 'English', 'Biology'], batchIds: ['ba-001', 'ba-007'] },
+  { id: 'st-005', userId: 'u-st-005', name: 'Student 10', email: 'student10@student.platosplanet.ae', parentId: 'pr-003', branchId: 'br-001', curriculum: 'A-Level', grade: 'Year 13', enrollmentDate: '2022-09-01', status: 'active', xp: 14200, streak: 34, planet: 'Neptune', subjects: ['Mathematics', 'Physics', 'Economics'], batchIds: ['ba-002', 'ba-006'] },
+  { id: 'st-006', userId: 'u-st-006', name: 'Student 7', email: 'student7@student.platosplanet.ae', parentId: 'pr-004', branchId: 'br-002', curriculum: 'CBSE', grade: 'Class 12', enrollmentDate: '2023-01-01', status: 'active', xp: 5100, streak: 15, planet: 'Jupiter', subjects: ['Chemistry', 'Biology', 'Mathematics'], batchIds: ['ba-004', 'ba-008'] },
+  { id: 'st-007', userId: 'u-st-007', name: 'Student 4', email: 'student4@student.platosplanet.ae', parentId: 'pr-005', branchId: 'br-001', curriculum: 'IGCSE', grade: 'Grade 11', enrollmentDate: '2023-09-01', status: 'active', xp: 1400, streak: 6, planet: 'Earth', subjects: ['English', 'History', 'Biology'], batchIds: ['ba-005', 'ba-007'] },
+  { id: 'st-008', userId: 'u-st-008', name: 'Student 6', email: 'student6@student.platosplanet.ae', parentId: 'pr-008', branchId: 'br-002', curriculum: 'A-Level', grade: 'Year 12', enrollmentDate: '2022-09-01', status: 'active', xp: 4600, streak: 18, planet: 'Jupiter', subjects: ['Biology', 'Chemistry', 'Mathematics'], batchIds: ['ba-009', 'ba-010'] },
+  { id: 'st-009', userId: 'u-st-009', name: 'Student 11', email: 'student11@student.platosplanet.ae', parentId: 'pr-008', branchId: 'br-002', curriculum: 'IGCSE', grade: 'Grade 10', enrollmentDate: '2023-01-01', status: 'active', xp: 2200, streak: 9, planet: 'Earth', subjects: ['Mathematics', 'Physics', 'Economics'], batchIds: ['ba-009', 'ba-010'] },
+  { id: 'st-010', userId: 'u-st-010', name: 'Student 3', email: 'student3@student.platosplanet.ae', parentId: 'pr-004', branchId: 'br-002', curriculum: 'CBSE', grade: 'Class 11', enrollmentDate: '2023-09-01', status: 'active', xp: 880, streak: 3, planet: 'Venus', subjects: ['Mathematics', 'Computer Science'], batchIds: ['ba-004', 'ba-008'] },
+  { id: 'st-011', userId: 'u-st-011', name: 'Student 12', email: 'student12@student.platosplanet.ae', parentId: 'pr-006', branchId: 'br-001', curriculum: 'IGCSE', grade: 'Grade 10', enrollmentDate: '2021-09-01', status: 'active', xp: 9200, streak: 28, planet: 'Saturn', subjects: ['Mathematics', 'Physics', 'English', 'History'], batchIds: ['ba-001', 'ba-002', 'ba-007'] },
+  { id: 'st-012', userId: 'u-st-012', name: 'Student 8', email: 'student8@student.platosplanet.ae', parentId: 'pr-007', branchId: 'br-002', curriculum: 'A-Level', grade: 'Year 13', enrollmentDate: '2022-01-01', status: 'suspended', xp: 2900, streak: 0, planet: 'Mars', subjects: ['Mathematics', 'Economics'], batchIds: ['ba-010'] },
 ];
 
 // ── Batches ───────────────────────────────────────────────────────────────────
@@ -105,8 +112,8 @@ export const batches: Batch[] = [
   { id: 'ba-006', name: 'A-Level Physics — Year 13 (Tue/Sat)', branchId: 'br-001', teacherId: 'tc-001', subject: 'Physics', curriculum: 'A-Level', grade: 'Year 13', studentIds: ['st-005', 'st-002'], maxCapacity: 8, schedule: [{ day: 'Tue', startTime: '14:00', endTime: '16:00' }, { day: 'Sat', startTime: '10:00', endTime: '12:00' }], status: 'active', room: 'Room 103', startDate: '2024-09-01' },
   { id: 'ba-007', name: 'IGCSE English — Grade 9/11 (Wed/Sat)', branchId: 'br-001', teacherId: 'tc-004', subject: 'English', curriculum: 'IGCSE', grade: 'Grade 9', studentIds: ['st-004', 'st-007', 'st-011'], maxCapacity: 12, schedule: [{ day: 'Wed', startTime: '15:00', endTime: '17:00' }, { day: 'Sat', startTime: '11:00', endTime: '13:00' }], status: 'active', room: 'Room 104', startDate: '2024-09-01' },
   { id: 'ba-008', name: 'CBSE CS & Mathematics — Class 12 (Wed/Fri)', branchId: 'br-002', teacherId: 'tc-003', subject: 'Computer Science', curriculum: 'CBSE', grade: 'Class 12', studentIds: ['st-006', 'st-010'], maxCapacity: 10, schedule: [{ day: 'Wed', startTime: '16:00', endTime: '18:00' }, { day: 'Fri', startTime: '14:00', endTime: '16:00' }], status: 'active', room: 'Computer Lab', startDate: '2024-09-01' },
-  { id: 'ba-009', name: 'A-Level Biology — Year 12 (Mon/Wed)', branchId: 'br-003', teacherId: 'tc-005', subject: 'Biology', curriculum: 'A-Level', grade: 'Year 12', studentIds: ['st-008', 'st-009'], maxCapacity: 10, schedule: [{ day: 'Mon', startTime: '16:00', endTime: '18:00' }, { day: 'Wed', startTime: '16:00', endTime: '18:00' }], status: 'active', room: 'Room 301', startDate: '2024-09-01' },
-  { id: 'ba-010', name: 'A-Level Economics — Year 12/13 (Tue/Thu)', branchId: 'br-003', teacherId: 'tc-006', subject: 'Economics', curriculum: 'A-Level', grade: 'Year 12', studentIds: ['st-008', 'st-009', 'st-012'], maxCapacity: 12, schedule: [{ day: 'Tue', startTime: '15:00', endTime: '17:00' }, { day: 'Thu', startTime: '15:00', endTime: '17:00' }], status: 'active', room: 'Room 302', startDate: '2024-09-01' },
+  { id: 'ba-009', name: 'A-Level Biology — Year 12 (Mon/Wed)', branchId: 'br-002', teacherId: 'tc-005', subject: 'Biology', curriculum: 'A-Level', grade: 'Year 12', studentIds: ['st-008', 'st-009'], maxCapacity: 10, schedule: [{ day: 'Mon', startTime: '16:00', endTime: '18:00' }, { day: 'Wed', startTime: '16:00', endTime: '18:00' }], status: 'active', room: 'Room 301', startDate: '2024-09-01' },
+  { id: 'ba-010', name: 'A-Level Economics — Year 12/13 (Tue/Thu)', branchId: 'br-002', teacherId: 'tc-006', subject: 'Economics', curriculum: 'A-Level', grade: 'Year 12', studentIds: ['st-008', 'st-009', 'st-012'], maxCapacity: 12, schedule: [{ day: 'Tue', startTime: '15:00', endTime: '17:00' }, { day: 'Thu', startTime: '15:00', endTime: '17:00' }], status: 'active', room: 'Room 302', startDate: '2024-09-01' },
 ];
 
 // ── Attendance ─────────────────────────────────────────────────────────────────
@@ -195,7 +202,7 @@ export const attendance: AttendanceRecord[] = [
       'st-011': ['present','present','present','present','present','present','present','absent'],
     }
   ),
-  // ba-009 — A-Level Biology (Mon/Wed) Abu Dhabi
+  // ba-009 — A-Level Biology (Mon/Wed) Al Majaz
   ...genAtt(230, 'ba-009', ['st-008','st-009'], 'tc-005',
     [0,2,7,9,14,16,21,23],
     {
@@ -203,7 +210,7 @@ export const attendance: AttendanceRecord[] = [
       'st-009': ['present','present','absent','present','present','present','present','present'],
     }
   ),
-  // ba-010 — A-Level Economics (Tue/Thu) Abu Dhabi
+  // ba-010 — A-Level Economics (Tue/Thu) Al Majaz
   ...genAtt(250, 'ba-010', ['st-008','st-009','st-012'], 'tc-006',
     [1,3,8,10,15,17,22,24],
     {
@@ -439,81 +446,81 @@ export const assessments: Assessment[] = [
 
 export const leads: Lead[] = [
   {
-    id: 'ld-001', parentName: 'Ahmed Al Mansouri', parentEmail: 'ahmed.mansouri@gmail.com', parentPhone: '+971 50 400 5001',
-    studentName: 'Sara Al Mansouri', studentAge: 15, curriculum: 'IGCSE', subjects: ['Mathematics', 'Physics'], grade: 'Grade 10',
+    id: 'ld-001', parentName: 'Lead 1 Parent', parentEmail: 'lead1parent@example.com', parentPhone: '+971 50 400 5001',
+    studentName: 'Lead 1', studentAge: 15, curriculum: 'IGCSE', subjects: ['Mathematics', 'Physics'], grade: 'Grade 10',
     source: 'referral', status: 'trial_scheduled', assignedTo: 'u-sl-001', branchId: 'br-001',
     notes: 'Father is a doctor. Very keen on A* grades. Trial class booked for Wednesday.',
     followUpDate: daysAgo(-1), trialDate: daysAgo(-1), createdAt: daysAgo(5),
   },
   {
-    id: 'ld-002', parentName: 'Rajesh Kumar', parentEmail: 'rajesh.kumar@hotmail.com', parentPhone: '+971 55 500 6002',
-    studentName: 'Priya Kumar', studentAge: 16, curriculum: 'CBSE', subjects: ['Chemistry', 'Biology'], grade: 'Class 11',
+    id: 'ld-002', parentName: 'Lead 2 Parent', parentEmail: 'lead2parent@example.com', parentPhone: '+971 55 500 6002',
+    studentName: 'Lead 2', studentAge: 16, curriculum: 'CBSE', subjects: ['Chemistry', 'Biology'], grade: 'Class 11',
     source: 'google_ads', status: 'contacted', assignedTo: 'u-sl-001', branchId: 'br-001',
     notes: 'Interested in medical entrance prep alongside CBSE. Wants weekend batches only.',
     followUpDate: daysAgo(-2), createdAt: daysAgo(3),
   },
   {
-    id: 'ld-003', parentName: 'Claire Williams', parentEmail: 'claire.williams@icloud.com', parentPhone: '+971 52 600 7003',
-    studentName: 'Jack Williams', studentAge: 17, curriculum: 'A-Level', subjects: ['Mathematics', 'Computer Science'], grade: 'Year 12',
+    id: 'ld-003', parentName: 'Lead 3 Parent', parentEmail: 'lead3parent@example.com', parentPhone: '+971 52 600 7003',
+    studentName: 'Lead 3', studentAge: 17, curriculum: 'A-Level', subjects: ['Mathematics', 'Computer Science'], grade: 'Year 12',
     source: 'walk_in', status: 'new', branchId: 'br-002', createdAt: daysAgo(1),
   },
   {
-    id: 'ld-004', parentName: 'Fatima Saeed', parentEmail: 'fatima.saeed@gmail.com', parentPhone: '+971 56 700 8004',
-    studentName: 'Ali Saeed', studentAge: 14, curriculum: 'IGCSE', subjects: ['English', 'Biology', 'Mathematics'], grade: 'Grade 9',
+    id: 'ld-004', parentName: 'Lead 6 Parent', parentEmail: 'lead6parent@example.com', parentPhone: '+971 56 700 8004',
+    studentName: 'Lead 6', studentAge: 14, curriculum: 'IGCSE', subjects: ['English', 'Biology', 'Mathematics'], grade: 'Grade 9',
     source: 'social_media', status: 'enrolled', assignedTo: 'u-sl-001', branchId: 'br-001',
     notes: 'Successfully enrolled. Started October batch.',
     createdAt: daysAgo(15), convertedAt: daysAgo(7),
   },
   {
-    id: 'ld-005', parentName: 'Tariq Al Zaabi', parentEmail: 'tariq.alzaabi@gmail.com', parentPhone: '+971 50 801 9005',
-    studentName: 'Hessa Al Zaabi', studentAge: 13, curriculum: 'IGCSE', subjects: ['Mathematics', 'English'], grade: 'Grade 8',
+    id: 'ld-005', parentName: 'Lead 4 Parent', parentEmail: 'lead4parent@example.com', parentPhone: '+971 50 801 9005',
+    studentName: 'Lead 4', studentAge: 13, curriculum: 'IGCSE', subjects: ['Mathematics', 'English'], grade: 'Grade 8',
     source: 'whatsapp', status: 'new', branchId: 'br-001',
     notes: 'Sent inquiry via WhatsApp at 10pm. Prefers Arabic-speaking teacher.',
     createdAt: daysAgo(0),
   },
   {
-    id: 'ld-006', parentName: 'Sunita Menon', parentEmail: 'sunita.menon@yahoo.com', parentPhone: '+971 55 902 0006',
-    studentName: 'Rohan Menon', studentAge: 15, curriculum: 'CBSE', subjects: ['Physics', 'Chemistry', 'Mathematics'], grade: 'Class 10',
+    id: 'ld-006', parentName: 'Lead 7 Parent', parentEmail: 'lead7parent@example.com', parentPhone: '+971 55 902 0006',
+    studentName: 'Lead 7', studentAge: 15, curriculum: 'CBSE', subjects: ['Physics', 'Chemistry', 'Mathematics'], grade: 'Class 10',
     source: 'referral', status: 'trial_done', assignedTo: 'u-sl-001', branchId: 'br-001',
-    notes: 'Referred by Aryan Patel\'s family. Trial went well. Waiting for parent decision.',
+    notes: "Referred by Student 5's family. Trial went well. Waiting for parent decision.",
     followUpDate: daysAgo(-3), trialDate: daysAgo(4), createdAt: daysAgo(7),
   },
   {
-    id: 'ld-007', parentName: 'Robert Chen', parentEmail: 'rchen@gmail.com', parentPhone: '+971 52 003 1007',
-    studentName: 'Alice Chen', studentAge: 16, curriculum: 'A-Level', subjects: ['Mathematics', 'Economics', 'Business Studies'], grade: 'Year 11',
-    source: 'google_ads', status: 'contacted', assignedTo: 'u-sl-001', branchId: 'br-003',
+    id: 'ld-007', parentName: 'Lead 8 Parent', parentEmail: 'lead8parent@example.com', parentPhone: '+971 52 003 1007',
+    studentName: 'Lead 8', studentAge: 16, curriculum: 'A-Level', subjects: ['Mathematics', 'Economics', 'Business Studies'], grade: 'Year 11',
+    source: 'google_ads', status: 'contacted', assignedTo: 'u-sl-001', branchId: 'br-002',
     notes: 'Interested in university prep for UK unis. Parents are expats from Hong Kong.',
     followUpDate: daysAgo(-1), createdAt: daysAgo(4),
   },
   {
-    id: 'ld-008', parentName: 'Waleed Al Hamdan', parentEmail: 'w.hamdan@outlook.com', parentPhone: '+971 50 104 2008',
-    studentName: 'Yousef Al Hamdan', studentAge: 18, curriculum: 'A-Level', subjects: ['Physics', 'Mathematics'], grade: 'Year 13',
+    id: 'ld-008', parentName: 'Lead 5 Parent', parentEmail: 'lead5parent@example.com', parentPhone: '+971 50 104 2008',
+    studentName: 'Lead 5', studentAge: 18, curriculum: 'A-Level', subjects: ['Physics', 'Mathematics'], grade: 'Year 13',
     source: 'walk_in', status: 'contacted', branchId: 'br-001',
     notes: 'Retaking A-Levels. Needs intensive revision for June exams. Very motivated.',
     followUpDate: daysAgo(0), createdAt: daysAgo(2),
   },
   {
-    id: 'ld-009', parentName: 'Anita Pillai', parentEmail: 'a.pillai@gmail.com', parentPhone: '+971 55 205 3009',
-    studentName: 'Kavya Pillai', studentAge: 14, curriculum: 'IGCSE', subjects: ['Biology', 'Chemistry'], grade: 'Grade 9',
+    id: 'ld-009', parentName: 'Lead 9 Parent', parentEmail: 'lead9parent@example.com', parentPhone: '+971 55 205 3009',
+    studentName: 'Lead 9', studentAge: 14, curriculum: 'IGCSE', subjects: ['Biology', 'Chemistry'], grade: 'Grade 9',
     source: 'social_media', status: 'new', branchId: 'br-002',
     createdAt: daysAgo(0),
   },
   {
-    id: 'ld-010', parentName: 'Patrick O\'Sullivan', parentEmail: 'p.osullivan@icloud.com', parentPhone: '+971 52 306 4010',
-    studentName: 'Conor O\'Sullivan', studentAge: 17, curriculum: 'A-Level', subjects: ['Mathematics', 'Physics', 'Computer Science'], grade: 'Year 12',
-    source: 'referral', status: 'enrolled', assignedTo: 'u-sl-001', branchId: 'br-003',
-    notes: 'Enrolled for Abu Dhabi campus. Very high achiever — target Oxford Engineering.',
+    id: 'ld-010', parentName: 'Lead 10 Parent', parentEmail: 'lead10parent@example.com', parentPhone: '+971 52 306 4010',
+    studentName: 'Lead 10', studentAge: 17, curriculum: 'A-Level', subjects: ['Mathematics', 'Physics', 'Computer Science'], grade: 'Year 12',
+    source: 'referral', status: 'enrolled', assignedTo: 'u-sl-001', branchId: 'br-002',
+    notes: 'Enrolled at the Al Majaz campus. Very high achiever — target Oxford Engineering.',
     createdAt: daysAgo(20), convertedAt: daysAgo(10),
   },
   {
-    id: 'ld-011', parentName: 'Hind Al Marzouqi', parentEmail: 'hind.marzouqi@gmail.com', parentPhone: '+971 50 407 5011',
-    studentName: 'Hamdan Al Marzouqi', studentAge: 12, curriculum: 'IGCSE', subjects: ['Mathematics', 'English', 'Arabic'], grade: 'Grade 7',
+    id: 'ld-011', parentName: 'Lead 11 Parent', parentEmail: 'lead11parent@example.com', parentPhone: '+971 50 407 5011',
+    studentName: 'Lead 11', studentAge: 12, curriculum: 'IGCSE', subjects: ['Mathematics', 'English', 'Arabic'], grade: 'Grade 7',
     source: 'website', status: 'new', branchId: 'br-001',
     createdAt: daysAgo(0),
   },
   {
-    id: 'ld-012', parentName: 'Maria Santos', parentEmail: 'maria.santos@gmail.com', parentPhone: '+971 55 508 6012',
-    studentName: 'Gabriel Santos', studentAge: 16, curriculum: 'IGCSE', subjects: ['Mathematics', 'Computer Science'], grade: 'Grade 10',
+    id: 'ld-012', parentName: 'Lead 12 Parent', parentEmail: 'lead12parent@example.com', parentPhone: '+971 55 508 6012',
+    studentName: 'Lead 12', studentAge: 16, curriculum: 'IGCSE', subjects: ['Mathematics', 'Computer Science'], grade: 'Grade 10',
     source: 'google_ads', status: 'lost', branchId: 'br-002',
     notes: 'Chose a competitor. Price was the main objection.',
     followUpDate: daysAgo(8), createdAt: daysAgo(12),
@@ -554,12 +561,12 @@ export const invoices: Invoice[] = [
     totalAmount: 3600, currency: 'AED', status: 'paid', dueDate: daysAgo(12), issuedDate: daysAgo(22), paidDate: daysAgo(14), paymentMethod: 'cash',
   },
   {
-    id: 'inv-007', invoiceNumber: 'INV-2024-007', studentId: 'st-008', parentId: 'pr-008', branchId: 'br-003',
+    id: 'inv-007', invoiceNumber: 'INV-2024-007', studentId: 'st-008', parentId: 'pr-008', branchId: 'br-002',
     items: [{ description: 'A-Level Biology — November 2024', amount: 1300, quantity: 1 }, { description: 'A-Level Economics — November 2024', amount: 1300, quantity: 1 }],
     totalAmount: 2600, currency: 'AED', status: 'overdue', dueDate: daysAgo(7), issuedDate: daysAgo(17),
   },
   {
-    id: 'inv-008', invoiceNumber: 'INV-2024-008', studentId: 'st-009', parentId: 'pr-008', branchId: 'br-003',
+    id: 'inv-008', invoiceNumber: 'INV-2024-008', studentId: 'st-009', parentId: 'pr-008', branchId: 'br-002',
     items: [{ description: 'A-Level Biology — November 2024', amount: 1300, quantity: 1 }, { description: 'A-Level Economics — November 2024', amount: 1300, quantity: 1 }],
     totalAmount: 2600, currency: 'AED', status: 'paid', dueDate: daysAgo(14), issuedDate: daysAgo(24), paidDate: daysAgo(15), paymentMethod: 'card',
   },
@@ -579,9 +586,19 @@ export const invoices: Invoice[] = [
     totalAmount: 2800, currency: 'AED', status: 'paid', dueDate: daysAgo(8), issuedDate: daysAgo(18), paidDate: daysAgo(9), paymentMethod: 'online',
   },
   {
-    id: 'inv-012', invoiceNumber: 'INV-2024-012', studentId: 'st-012', parentId: 'pr-007', branchId: 'br-003',
+    id: 'inv-012', invoiceNumber: 'INV-2024-012', studentId: 'st-012', parentId: 'pr-007', branchId: 'br-002',
     items: [{ description: 'A-Level Economics — November 2024', amount: 1300, quantity: 1 }],
     totalAmount: 1300, currency: 'AED', status: 'overdue', dueDate: daysAgo(18), issuedDate: daysAgo(28),
+  },
+  {
+    id: 'inv-013', invoiceNumber: 'INV-2024-013', studentId: 'st-001', parentId: 'pr-001', branchId: 'br-001',
+    items: [{ description: 'IGCSE Full Year Tuition — 3-Instalment Plan', amount: 7200, quantity: 1 }],
+    totalAmount: 7200, currency: 'AED', status: 'partial', dueDate: daysAgo(-10), issuedDate: daysAgo(50), paidAmount: 4800,
+  },
+  {
+    id: 'inv-014', invoiceNumber: 'INV-2024-014', studentId: 'st-002', parentId: 'pr-002', branchId: 'br-001',
+    items: [{ description: 'A-Level Full Year Tuition — 4-Instalment Plan', amount: 9600, quantity: 1 }],
+    totalAmount: 9600, currency: 'AED', status: 'overdue', dueDate: daysAgo(30), issuedDate: daysAgo(60), paidAmount: 2400,
   },
 ];
 
@@ -589,32 +606,32 @@ export const invoices: Invoice[] = [
 
 export const messages: Message[] = [
   { id: 'msg-001', fromId: 'u-tc-001', toId: 'u-pr-001', subject: "Zaid's Progress — Physics", body: "Dear Mr. Al Farsi, Zaid has shown excellent improvement, scoring 85% in his Physics mock. He's particularly strong in forces and motion. Please ensure he completes Problem Set 3 due Wednesday. Best regards, Dr. Mitchell", isRead: false, sentAt: daysAgo(1), type: 'message' },
-  { id: 'msg-002', fromId: 'u-fi-001', toId: 'u-pr-002', subject: 'Invoice INV-2024-002 — Payment Reminder', body: 'Dear Ms. Thompson, Invoice INV-2024-002 for AED 3,100 is due on June 20th. Please log in to your parent portal to pay online. For queries: finance@platosplanet.ae', isRead: true, sentAt: daysAgo(2), type: 'notification' },
+  { id: 'msg-002', fromId: 'u-fi-001', toId: 'u-pr-002', subject: 'Invoice INV-2024-002 — Payment Reminder', body: 'Dear Parent 2, Invoice INV-2024-002 for AED 3,100 is due on June 20th. Please log in to your parent portal to pay online. For queries: finance@platosplanet.ae', isRead: true, sentAt: daysAgo(2), type: 'notification' },
   { id: 'msg-003', fromId: 'u-pr-001', toId: 'u-tc-001', subject: "Re: Zaid's Progress", body: "Thank you Dr. Mitchell. We're very pleased. Could we schedule a parent-teacher meeting to discuss A-Level preparation?", isRead: false, sentAt: daysAgo(0), type: 'message' },
-  { id: 'msg-004', fromId: 'u-tc-004', toId: 'u-pr-006', subject: "Mariam's Outstanding English Essay", body: "Dear Mr. Al Suwaidi, I'm writing to let you know that Mariam's poetry analysis essay was exceptional — 47/50. I've recommended it for the school magazine. She has a real gift for literature. Kind regards, Ms. Al Hashimi", isRead: false, sentAt: daysAgo(3), type: 'message' },
-  { id: 'msg-005', fromId: 'u-tc-005', toId: 'u-pr-008', subject: "Omar's Genetics Test Results", body: "Dear Ms. Al Rashid, Omar scored 54/60 (90%) in the Genetics test — one of the top scores in the cohort. He's ready for university-level biology. Well done to him! Mr. O'Brien", isRead: true, sentAt: daysAgo(5), type: 'message' },
+  { id: 'msg-004', fromId: 'u-tc-004', toId: 'u-pr-006', subject: "Student 12's Outstanding English Essay", body: "Dear Parent 12, I'm writing to let you know that Student 12's poetry analysis essay was exceptional — 47/50. I've recommended it for the school magazine. She has a real gift for literature. Kind regards, Staff 1", isRead: false, sentAt: daysAgo(3), type: 'message' },
+  { id: 'msg-005', fromId: 'u-tc-005', toId: 'u-pr-008', subject: "Student 6's Genetics Test Results", body: "Dear Parent 6, Student 6 scored 54/60 (90%) in the Genetics test — one of the top scores in the cohort. He's ready for university-level biology. Well done to him! Staff 6", isRead: true, sentAt: daysAgo(5), type: 'message' },
   { id: 'msg-006', fromId: 'u-co-001', toId: 'u-tc-001', subject: 'Upcoming Mock Exam Schedule', body: "Dear Dr. Mitchell, Please submit the question paper for A-Level Pure 1 mock by Thursday EOD. Exam is scheduled for next week. Please ensure all students are notified. Dr. Ibrahim", isRead: false, sentAt: daysAgo(1), type: 'message' },
-  { id: 'msg-007', fromId: 'u-fi-001', toId: 'u-pr-008', subject: 'Invoice INV-2024-007 — Overdue Notice', body: "Dear Ms. Al Rashid, Invoice INV-2024-007 for AED 2,600 is now 7 days overdue. Please contact us urgently to avoid service interruption. finance@platosplanet.ae", isRead: false, sentAt: daysAgo(2), type: 'alert' },
-  { id: 'msg-008', fromId: 'u-pr-003', toId: 'u-tc-001', subject: "Rayan's University Application Help", body: "Dr. Mitchell, Rayan has received a conditional offer from Imperial College for Engineering. Could you write a supporting reference letter? He needs it by end of month. Thank you, Hassan Al Khalil", isRead: false, sentAt: daysAgo(0), type: 'message' },
-  { id: 'msg-009', fromId: 'u-tc-006', toId: 'u-pr-007', subject: "Lucas — Attendance & Academic Warning", body: "Dear Mr. Andrade, I need to bring to your attention that Lucas has missed 5 of the last 8 Economics sessions and scored only 60% on his mock. We need an urgent meeting to discuss a support plan. Dr. Krishnan", isRead: false, sentAt: daysAgo(1), type: 'alert' },
-  { id: 'msg-010', fromId: 'u-sa-001', toId: 'u-ba-001', subject: 'Dubai Marina Q4 Targets', body: "Fatima, please ensure Dubai Marina hits 180 enrolled students by December. Currently at 142. Focus on A-Level and IGCSE Grade 9-10 outreach. Let me know if you need marketing support. — Khalid", isRead: true, sentAt: daysAgo(4), type: 'message' },
+  { id: 'msg-007', fromId: 'u-fi-001', toId: 'u-pr-008', subject: 'Invoice INV-2024-007 — Overdue Notice', body: "Dear Parent 6, Invoice INV-2024-007 for AED 2,600 is now 7 days overdue. Please contact us urgently to avoid service interruption. finance@platosplanet.ae", isRead: false, sentAt: daysAgo(2), type: 'alert' },
+  { id: 'msg-008', fromId: 'u-pr-003', toId: 'u-tc-001', subject: "Student 10's University Application Help", body: "Dr. Mitchell, Student 10 has received a conditional offer from Imperial College for Engineering. Could you write a supporting reference letter? He needs it by end of month. Thank you, Parent 10", isRead: false, sentAt: daysAgo(0), type: 'message' },
+  { id: 'msg-009', fromId: 'u-tc-006', toId: 'u-pr-007', subject: "Student 8 — Attendance & Academic Warning", body: "Dear Parent 8, I need to bring to your attention that Student 8 has missed 5 of the last 8 Economics sessions and scored only 60% on his mock. We need an urgent meeting to discuss a support plan. Staff 7", isRead: false, sentAt: daysAgo(1), type: 'alert' },
+  { id: 'msg-010', fromId: 'u-sa-001', toId: 'u-ba-001', subject: 'Al Qusais Q4 Targets', body: "Fatima, please ensure Al Qusais hits 180 enrolled students by December. Currently at 142. Focus on A-Level and IGCSE Grade 9-10 outreach. Let me know if you need marketing support. — Khalid", isRead: true, sentAt: daysAgo(4), type: 'message' },
 ];
 
 // ── Meetings ──────────────────────────────────────────────────────────────────
 
 export const meetings: Meeting[] = [
-  { id: 'mt-001', requestedBy: 'u-pr-001', teacherId: 'u-tc-001', parentId: 'pr-001', studentId: 'st-001', branchId: 'br-001', scheduledAt: daysAgo(-3), duration: 30, status: 'confirmed', agenda: 'Discuss A-Level preparation strategy and subject selection for Year 12.', type: 'parent_teacher' },
-  { id: 'mt-002', requestedBy: 'u-co-001', teacherId: 'u-tc-002', parentId: 'pr-002', studentId: 'st-002', branchId: 'br-001', scheduledAt: daysAgo(-5), duration: 45, status: 'pending', agenda: 'Quarterly academic review for Emma Thompson.', type: 'academic_review' },
-  { id: 'mt-003', requestedBy: 'u-tc-006', teacherId: 'u-tc-006', parentId: 'pr-007', studentId: 'st-012', branchId: 'br-003', scheduledAt: daysAgo(-2), duration: 30, status: 'confirmed', agenda: 'Academic warning meeting — attendance and performance below threshold.', type: 'counselling' },
-  { id: 'mt-004', requestedBy: 'u-pr-003', teacherId: 'u-tc-001', parentId: 'pr-003', studentId: 'st-005', branchId: 'br-001', scheduledAt: daysAgo(-7), duration: 60, status: 'completed', agenda: 'University application reference letter and predicted grades for Imperial College.', notes: 'Agreed on A* predicted grade for Physics. Reference to be submitted by month end.', type: 'academic_review' },
-  { id: 'mt-005', requestedBy: 'u-pr-004', teacherId: 'u-tc-003', parentId: 'pr-004', studentId: 'st-006', branchId: 'br-002', scheduledAt: daysAgo(-1), duration: 30, status: 'pending', agenda: 'Discuss Sofia\'s CBSE board exam preparation and study plan.', type: 'parent_teacher' },
-  { id: 'mt-006', requestedBy: 'u-tc-004', teacherId: 'u-tc-004', parentId: 'pr-006', studentId: 'st-011', branchId: 'br-001', scheduledAt: daysAgo(-14), duration: 20, status: 'completed', agenda: 'Mariam\'s essay shortlisted for school magazine.', notes: 'Parent delighted. Agreed to submit essay. Discussed A-Level English Lit options.', type: 'parent_teacher' },
+  { id: 'mt-001', requestedBy: 'u-pr-001', teacherId: 'u-tc-001', parentId: 'pr-001', studentId: 'st-001', branchId: 'br-001', scheduledAt: atTime(-3, 16), duration: 30, status: 'confirmed', agenda: 'Discuss A-Level preparation strategy and subject selection for Year 12.', type: 'parent_teacher' },
+  { id: 'mt-002', requestedBy: 'u-co-001', teacherId: 'u-tc-002', parentId: 'pr-002', studentId: 'st-002', branchId: 'br-001', scheduledAt: atTime(-5, 11), duration: 45, status: 'pending', agenda: 'Quarterly academic review for Student 2.', type: 'academic_review' },
+  { id: 'mt-003', requestedBy: 'u-tc-006', teacherId: 'u-tc-006', parentId: 'pr-007', studentId: 'st-012', branchId: 'br-002', scheduledAt: atTime(-2, 15), duration: 30, status: 'confirmed', agenda: 'Academic warning meeting — attendance and performance below threshold.', type: 'counselling' },
+  { id: 'mt-004', requestedBy: 'u-pr-003', teacherId: 'u-tc-001', parentId: 'pr-003', studentId: 'st-005', branchId: 'br-001', scheduledAt: atTime(-7, 10), duration: 60, status: 'completed', agenda: 'University application reference letter and predicted grades for Imperial College.', notes: 'Agreed on A* predicted grade for Physics. Reference to be submitted by month end.', type: 'academic_review' },
+  { id: 'mt-005', requestedBy: 'u-pr-004', teacherId: 'u-tc-003', parentId: 'pr-004', studentId: 'st-006', branchId: 'br-002', scheduledAt: atTime(-1, 17), duration: 30, status: 'pending', agenda: "Discuss Student 7's CBSE board exam preparation and study plan.", type: 'parent_teacher' },
+  { id: 'mt-006', requestedBy: 'u-tc-004', teacherId: 'u-tc-004', parentId: 'pr-006', studentId: 'st-011', branchId: 'br-001', scheduledAt: atTime(-14, 9), duration: 20, status: 'completed', agenda: "Student 12's essay shortlisted for school magazine.", notes: 'Parent delighted. Agreed to submit essay. Discussed A-Level English Lit options.', type: 'parent_teacher' },
 ];
 
 // ── Notifications ─────────────────────────────────────────────────────────────
 
 export const notifications: Notification[] = [
-  { id: 'notif-001', userId: 'u-pr-001', title: 'Attendance Alert', message: 'Zaid was marked late for Physics class on Monday.', type: 'warning', isRead: false, createdAt: daysAgo(0) },
+  { id: 'notif-001', userId: 'u-pr-001', title: 'Attendance Alert', message: 'Zaid was marked late for Physics class on Monday.', type: 'warning', isRead: true, createdAt: daysAgo(0) },
   { id: 'notif-002', userId: 'u-st-001', title: 'Homework Due Tomorrow', message: "Newton's Laws — Problem Set 3 is due in 24 hours.", type: 'warning', isRead: false, createdAt: daysAgo(0) },
   { id: 'notif-003', userId: 'u-st-001', title: 'Achievement Unlocked!', message: 'You reached Mars! Keep going — Jupiter awaits.', type: 'success', isRead: false, createdAt: daysAgo(1) },
   { id: 'notif-004', userId: 'u-st-002', title: 'New Test Result', message: 'Your A-Level Physics Quantum Mock result is available: 79% (A).', type: 'info', isRead: false, createdAt: daysAgo(14) },
@@ -624,8 +641,33 @@ export const notifications: Notification[] = [
   { id: 'notif-008', userId: 'u-st-008', title: 'New Homework Assigned', message: 'Mr. O\'Brien has assigned: Enzymes — Reaction Rate Lab Report. Due in 1 day.', type: 'info', isRead: true, createdAt: daysAgo(4) },
   { id: 'notif-009', userId: 'u-pr-008', title: 'Overdue Invoice', message: 'Invoice INV-2024-007 for AED 2,600 is now overdue. Please settle immediately.', type: 'error', isRead: false, createdAt: daysAgo(2) },
   { id: 'notif-010', userId: 'u-st-012', title: 'Academic Warning', message: 'Your attendance has dropped to 37.5%. You risk losing your place. Please contact your teacher.', type: 'error', isRead: false, createdAt: daysAgo(1) },
-  { id: 'notif-011', userId: 'u-pr-006', title: "Mariam's Essay in Magazine", message: "Mariam's poetry analysis will be featured in this term's school magazine. Congratulations!", type: 'success', isRead: false, createdAt: daysAgo(3) },
-  { id: 'notif-012', userId: 'u-st-009', title: 'Meeting Scheduled', message: 'A parent-teacher meeting has been confirmed for next week with Dr. Krishnan.', type: 'info', isRead: true, createdAt: daysAgo(5) },
+  { id: 'notif-011', userId: 'u-pr-006', title: "Student 12's Essay in Magazine", message: "Student 12's poetry analysis will be featured in this term's school magazine. Congratulations!", type: 'success', isRead: false, createdAt: daysAgo(3) },
+  { id: 'notif-012', userId: 'u-st-009', title: 'Meeting Scheduled', message: 'A parent-teacher meeting has been confirmed for next week with Staff 7.', type: 'info', isRead: true, createdAt: daysAgo(5) },
+
+  // Role-specific notifications (per role, for the bell dropdown)
+  { id: 'notif-013', userId: 'u-ba-001', title: 'Pending Approvals', message: '2 pending requests need your approval.', type: 'warning', isRead: false, createdAt: daysAgo(0), link: '/branch-admin/requests' },
+  { id: 'notif-014', userId: 'u-ba-001', title: 'Attendance Drop', message: "Student 9's attendance dropped to 75%.", type: 'warning', isRead: false, createdAt: daysAgo(0), link: '/branch-admin/students' },
+  { id: 'notif-015', userId: 'u-ba-001', title: 'New Enrolment', message: 'New student enrolled: Zaid Al Farsi (IGCSE Grade 10).', type: 'success', isRead: false, createdAt: daysAgo(1), link: '/branch-admin/students' },
+
+  { id: 'notif-016', userId: 'u-sl-001', title: '🔴 Hot Lead', message: 'Lead 1 — trial class today.', type: 'error', isRead: false, createdAt: daysAgo(0), link: '/sales/leads' },
+  { id: 'notif-017', userId: 'u-sl-001', title: 'Follow-up Overdue', message: 'Lead 5 follow-up is 1 day overdue.', type: 'warning', isRead: false, createdAt: daysAgo(0), link: '/sales/follow-ups' },
+  { id: 'notif-018', userId: 'u-sl-001', title: 'New Lead', message: 'New lead received from WhatsApp: Lead 4.', type: 'info', isRead: false, createdAt: daysAgo(0), link: '/sales/leads' },
+
+  { id: 'notif-019', userId: 'u-tc-001', title: 'Homework to Review', message: '3 homework submissions awaiting your review.', type: 'info', isRead: false, createdAt: daysAgo(0), link: '/teacher/homework' },
+  { id: 'notif-020', userId: 'u-tc-001', title: 'Parent Message', message: "Parent message from Mohammed Al Farsi about Zaid's batch.", type: 'info', isRead: false, createdAt: daysAgo(0), link: '/teacher/messages' },
+
+  { id: 'notif-021', userId: 'u-co-001', title: 'Intervention Required', message: 'Student 8 attendance: 37.5% — intervention required.', type: 'error', isRead: false, createdAt: daysAgo(0), link: '/coordinator/interventions' },
+  { id: 'notif-022', userId: 'u-co-001', title: 'Curriculum Behind', message: 'A-Level Maths batch is behind on curriculum (25% coverage).', type: 'warning', isRead: false, createdAt: daysAgo(0), link: '/coordinator/syllabus' },
+
+  { id: 'notif-023', userId: 'u-fi-001', title: 'Overdue Invoices', message: '4 overdue invoices require immediate follow-up (AED 8,400).', type: 'error', isRead: false, createdAt: daysAgo(0), link: '/finance/outstanding' },
+  { id: 'notif-024', userId: 'u-fi-001', title: 'VAT Summary Ready', message: 'VAT Q2 2026 summary ready to review.', type: 'info', isRead: false, createdAt: daysAgo(0), link: '/finance/vat' },
+
+  { id: 'notif-025', userId: 'u-sa-001', title: 'Go Live Setup', message: 'Go Live Setup is 38% complete — 15 checks remaining.', type: 'warning', isRead: false, createdAt: daysAgo(0), link: '/super-admin/go-live' },
+  { id: 'notif-026', userId: 'u-sa-001', title: 'Overdue Invoices', message: '5 overdue invoices across all branches.', type: 'error', isRead: false, createdAt: daysAgo(0), link: '/super-admin/finance' },
+  { id: 'notif-027', userId: 'u-sa-001', title: 'New Enquiry', message: 'New enquiry: Lead 4 (IGCSE) via WhatsApp.', type: 'info', isRead: false, createdAt: daysAgo(1), link: '/super-admin/admissions' },
+
+  { id: 'notif-028', userId: 'u-pr-001', title: 'New Message', message: "New message from Dr. Sarah Mitchell about Zaid's Physics progress.", type: 'info', isRead: false, createdAt: daysAgo(0), link: '/parent/messages' },
+  { id: 'notif-029', userId: 'u-pr-001', title: 'Invoice Due Soon', message: 'Invoice INV-2024-010 (AED 3,600) due in 2 days.', type: 'warning', isRead: false, createdAt: daysAgo(0), link: '/parent/fees' },
 ];
 
 // ── Achievements ──────────────────────────────────────────────────────────────
@@ -649,7 +691,7 @@ export const achievements: Achievement[] = [
 
 export const settings: SystemSettings = {
   companyName: "Plato's Planet Digital",
-  address: 'Dubai Marina, Tower 1, Level 12',
+  address: '305 & 312, SMJ-2, Damascus Street, Al Qusais, Dubai',
   phone: '+971 4 123 4567',
   email: 'hello@platosplanet.ae',
   website: 'https://platosplanet.ae',
@@ -660,6 +702,8 @@ export const settings: SystemSettings = {
   vatRate: 5,
   whatsappEnabled: false,
   isLive: false,
+  currentTerm: 'Term 3',
+  mode: 'demo',
 };
 
 // ── AI Conversations ──────────────────────────────────────────────────────────
@@ -670,10 +714,219 @@ export const conversations: AIConversation[] = [
     createdAt: daysAgo(1),
     messages: [
       { id: 'cm-001', role: 'user', content: "Can you explain Newton's Second Law with a worked example?", timestamp: daysAgo(1) },
-      { id: 'cm-002', role: 'assistant', content: "Newton's Second Law states **F = ma**. A 5 kg box pushed with 20 N force has acceleration: a = F/m = 20/5 = **4 m/s²**. Want an IGCSE-style question with friction?", timestamp: daysAgo(1) },
+      { id: 'cm-002', role: 'assistant', content: "Newton's Second Law states **F = ma**. A 5 kg box pushed with 20 N force has acceleration: a = F/m = 20/5 = **4 m/s²**. Want an IGCSE-style question with friction?", timestamp: daysAgo(1), saved: true },
     ],
   },
 ];
+
+// ── Campaigns ─────────────────────────────────────────────────────────────────
+
+export const campaigns: Campaign[] = [
+  { id: 'cmp-001', name: 'Back to School 2024', channel: 'social_media', branchId: 'br-001', startDate: daysAgo(40), endDate: daysAgo(10), budget: 8000, leadsGenerated: 34, conversions: 9, status: 'ended' },
+  { id: 'cmp-002', name: 'Google Search — A-Level Prep', channel: 'google_ads', branchId: 'br-001', startDate: daysAgo(25), budget: 5000, leadsGenerated: 21, conversions: 5, status: 'active' },
+  { id: 'cmp-003', name: 'Friend Referral Bonus', channel: 'referral', branchId: 'br-002', startDate: daysAgo(60), budget: 2000, leadsGenerated: 14, conversions: 6, status: 'active' },
+  { id: 'cmp-004', name: 'WhatsApp Broadcast — CBSE Boards', channel: 'whatsapp', branchId: 'br-002', startDate: daysAgo(15), budget: 1200, leadsGenerated: 9, conversions: 2, status: 'active' },
+  { id: 'cmp-005', name: 'Summer Camp Email Blast', channel: 'email', branchId: 'br-001', startDate: daysAgo(70), endDate: daysAgo(50), budget: 1500, leadsGenerated: 11, conversions: 3, status: 'ended' },
+];
+
+// ── Scholarship Applications ─────────────────────────────────────────────────
+
+export const scholarships: ScholarshipApplication[] = [
+  { id: 'sch-001', studentId: 'st-011', type: 'merit', requestedPercentage: 25, approvedPercentage: 20, reason: 'Top of class in IGCSE Physics & English, 9.2k XP, exceptional essay shortlisted for school magazine.', status: 'approved', submittedAt: daysAgo(20), reviewedBy: 'u-sa-001' },
+  { id: 'sch-002', studentId: 'st-004', type: 'sibling', requestedPercentage: 10, reason: 'Younger sibling of an enrolled student (Student 9); family requesting multi-child discount.', status: 'pending', submittedAt: daysAgo(3) },
+  { id: 'sch-003', studentId: 'st-009', type: 'need_based', requestedPercentage: 30, reason: 'Family relocated from Abu Dhabi to Sharjah after job loss; requesting financial assistance to continue A-Level prep at the Al Majaz campus.', status: 'pending', submittedAt: daysAgo(6) },
+  { id: 'sch-004', studentId: 'st-012', type: 'merit', requestedPercentage: 15, approvedPercentage: 0, reason: 'Requested based on prior school record, but recent attendance (37.5%) and grades do not meet merit bar.', status: 'rejected', submittedAt: daysAgo(12), reviewedBy: 'u-sa-001' },
+];
+
+// ── Audit Log ─────────────────────────────────────────────────────────────────
+
+export const auditLog: AuditLogEntry[] = [
+  { id: 'aud-001', userId: 'u-sa-001', action: 'Updated system settings', entityType: 'Settings', details: 'Changed VAT rate from 0% to 5%.', timestamp: daysAgo(45), severity: 'warning' },
+  { id: 'aud-002', userId: 'u-ba-001', action: 'Created branch admin account', entityType: 'User', entityId: 'u-ba-001', details: 'Provisioned new branch admin for the Al Qusais centre.', timestamp: daysAgo(200), severity: 'info' },
+  { id: 'aud-003', userId: 'u-fi-001', action: 'Recorded payment', entityType: 'Invoice', entityId: 'inv-006', details: 'Marked INV-2024-006 as paid via cash, AED 3,600.', timestamp: daysAgo(14), severity: 'info' },
+  { id: 'aud-004', userId: 'u-co-001', action: 'Approved assessment', entityType: 'Assessment', entityId: 'as-003', details: 'Approved A-Level Maths Pure 1 Test for scheduling.', timestamp: daysAgo(2), severity: 'info' },
+  { id: 'aud-005', userId: 'u-sa-001', action: 'Deactivated branch admin', entityType: 'User', details: 'Temporarily deactivated a branch admin account pending HR review.', timestamp: daysAgo(60), severity: 'critical' },
+  { id: 'aud-006', userId: 'u-tc-006', action: 'Flagged at-risk student', entityType: 'Student', entityId: 'st-012', details: 'Raised academic warning for Student 8 — attendance below 40%.', timestamp: daysAgo(1), severity: 'warning' },
+  { id: 'aud-007', userId: 'u-sl-001', action: 'Converted lead to enrolment', entityType: 'Lead', entityId: 'ld-004', details: 'Lead ld-004 (Lead 6) converted to enrolled student.', timestamp: daysAgo(7), severity: 'info' },
+  { id: 'aud-008', userId: 'u-sa-001', action: 'Exported financial report', entityType: 'Report', details: 'Exported Q4 revenue report (PDF) for board meeting.', timestamp: daysAgo(5), severity: 'info' },
+  { id: 'aud-009', userId: 'u-ba-002', action: 'Failed login attempt', entityType: 'Auth', details: '3 failed login attempts before successful sign-in.', timestamp: daysAgo(9), severity: 'warning' },
+  { id: 'aud-010', userId: 'u-sa-001', action: 'Toggled platform live status', entityType: 'Settings', details: 'isLive flag changed during Go-Live setup walkthrough.', timestamp: daysAgo(100), severity: 'critical' },
+];
+
+// ── Branch Requests ───────────────────────────────────────────────────────────
+
+export const branchRequests: BranchRequest[] = [
+  { id: 'req-001', branchId: 'br-001', requestedBy: 'u-tc-004', type: 'leave', title: 'Sick leave — 2 days', description: 'Requesting sick leave for Wed–Thu, will arrange cover for English batches.', status: 'pending', createdAt: daysAgo(1) },
+  { id: 'req-002', branchId: 'br-001', requestedBy: 'u-tc-001', type: 'room_booking', title: 'Lab 1 for extra revision session', description: 'Need Lab 1 booked Saturday 2–4pm for A-Level Physics revision before mock exam.', status: 'approved', createdAt: daysAgo(4), resolvedAt: daysAgo(3) },
+  { id: 'req-003', branchId: 'br-001', requestedBy: 'u-pr-001', type: 'parent_request', title: 'Request to switch Zaid\'s Biology batch', description: 'Current batch clashes with football practice — requesting move to a Tuesday/Friday slot.', status: 'pending', createdAt: daysAgo(2) },
+  { id: 'req-004', branchId: 'br-002', requestedBy: 'u-tc-006', type: 'room_booking', title: 'Room 302 — parent counselling session', description: "Need a private room for the counselling meeting with Student 8's family.", status: 'approved', createdAt: daysAgo(3), resolvedAt: daysAgo(2) },
+  { id: 'req-005', branchId: 'br-002', requestedBy: 'u-tc-003', type: 'resource', title: 'New projector for Computer Lab', description: 'Current projector flickers during CS lessons; requesting replacement before next term.', status: 'pending', createdAt: daysAgo(6) },
+  { id: 'req-006', branchId: 'br-001', requestedBy: 'u-pr-006', type: 'parent_request', title: 'Extra practice papers for Student 12', description: 'Requesting additional past papers ahead of her English exam.', status: 'rejected', createdAt: daysAgo(10), resolvedAt: daysAgo(8) },
+];
+
+// ── Class Notes ───────────────────────────────────────────────────────────────
+
+export const classNotes: ClassNote[] = [
+  { id: 'note-001', batchId: 'ba-001', teacherId: 'tc-001', title: 'Forces & Motion — Lecture Slides', description: 'Full slide deck covering Newton\'s three laws with worked examples.', subject: 'Physics', fileType: 'slides', uploadedAt: daysAgo(9) },
+  { id: 'note-002', batchId: 'ba-001', teacherId: 'tc-001', title: 'Free Body Diagram Cheat Sheet', subject: 'Physics', fileType: 'pdf', uploadedAt: daysAgo(6) },
+  { id: 'note-003', batchId: 'ba-003', teacherId: 'tc-002', title: 'Organic Chemistry Naming Guide', description: 'IUPAC nomenclature rules with practice compounds.', subject: 'Chemistry', fileType: 'pdf', uploadedAt: daysAgo(4) },
+  { id: 'note-004', batchId: 'ba-002', teacherId: 'tc-001', title: 'Integration by Parts — Worked Solutions', subject: 'Mathematics', fileType: 'pdf', uploadedAt: daysAgo(7) },
+  { id: 'note-005', batchId: 'ba-007', teacherId: 'tc-004', title: 'Unseen Poetry — Annotation Techniques (Video)', subject: 'English', fileType: 'video', uploadedAt: daysAgo(11) },
+  { id: 'note-006', batchId: 'ba-005', teacherId: 'tc-002', title: 'Mitosis vs Meiosis Diagram Pack', subject: 'Biology', fileType: 'slides', uploadedAt: daysAgo(2) },
+  { id: 'note-007', batchId: 'ba-009', teacherId: 'tc-005', title: 'Genetics — Khan Academy Playlist', subject: 'Biology', fileType: 'link', uploadedAt: daysAgo(5) },
+  { id: 'note-008', batchId: 'ba-010', teacherId: 'tc-006', title: 'Macroeconomics Mock — Mark Scheme', subject: 'Economics', fileType: 'pdf', uploadedAt: daysAgo(19) },
+];
+
+// ── Lesson Logs ───────────────────────────────────────────────────────────────
+
+export const lessonLogs: LessonLog[] = [
+  { id: 'log-001', batchId: 'ba-001', teacherId: 'tc-001', date: '2026-06-16',
+    topicCovered: "Newton's Laws of Motion (completed chapters 4.1–4.3)",
+    homeworkId: 'hw-001',
+    nextClassPlan: 'Begin chapter 4.4 — Momentum and Impulse',
+    privateNotes: 'Zaid needs extra help with vector components — schedule 10 min catch-up' },
+  { id: 'log-002', batchId: 'ba-002', teacherId: 'tc-001', date: '2026-06-17',
+    topicCovered: 'Integration by parts (practice problems)',
+    homeworkId: 'hw-003',
+    nextClassPlan: 'Integration by substitution',
+    privateNotes: 'Student 2 progressing well — suggest past paper practice' },
+];
+
+// ── Syllabus Plans ────────────────────────────────────────────────────────────
+
+export const syllabusPlans: SyllabusPlan[] = [
+  { id: 'syl-001', batchId: 'ba-001', subject: 'Physics', curriculum: 'IGCSE', term: 'Term 2 2024-25', topics: [
+    { title: 'Forces & Motion', weekNumber: 1, status: 'completed' },
+    { title: 'Energy & Work', weekNumber: 3, status: 'completed' },
+    { title: 'Waves', weekNumber: 5, status: 'completed' },
+    { title: 'Electricity & Circuits', weekNumber: 7, status: 'in_progress' },
+    { title: 'Magnetism', weekNumber: 9, status: 'pending' },
+    { title: 'Nuclear Physics', weekNumber: 11, status: 'pending' },
+  ] },
+  { id: 'syl-002', batchId: 'ba-003', subject: 'Chemistry', curriculum: 'IGCSE', term: 'Term 2 2024-25', topics: [
+    { title: 'Atomic Structure', weekNumber: 1, status: 'completed' },
+    { title: 'Bonding', weekNumber: 3, status: 'completed' },
+    { title: 'Organic Chemistry', weekNumber: 5, status: 'in_progress' },
+    { title: 'Rates of Reaction', weekNumber: 8, status: 'pending' },
+    { title: 'Electrolysis', weekNumber: 10, status: 'pending' },
+  ] },
+  { id: 'syl-003', batchId: 'ba-002', subject: 'Mathematics', curriculum: 'A-Level', term: 'Term 2 2024-25', topics: [
+    { title: 'Algebra & Functions', weekNumber: 1, status: 'completed' },
+    { title: 'Sequences & Series', weekNumber: 3, status: 'completed' },
+    { title: 'Differentiation', weekNumber: 5, status: 'completed' },
+    { title: 'Integration', weekNumber: 7, status: 'in_progress' },
+    { title: 'Vectors', weekNumber: 10, status: 'pending' },
+  ] },
+  { id: 'syl-004', batchId: 'ba-010', subject: 'Economics', curriculum: 'A-Level', term: 'Term 2 2024-25', topics: [
+    { title: 'Market Structures', weekNumber: 1, status: 'completed' },
+    { title: 'Macroeconomic Indicators', weekNumber: 4, status: 'completed' },
+    { title: 'Fiscal Policy', weekNumber: 7, status: 'in_progress' },
+    { title: 'Monetary Policy', weekNumber: 9, status: 'pending' },
+    { title: 'International Trade', weekNumber: 11, status: 'pending' },
+  ] },
+  { id: 'syl-005', batchId: 'ba-007', subject: 'English', curriculum: 'IGCSE', term: 'Term 2 2024-25', topics: [
+    { title: 'Unseen Poetry Analysis', weekNumber: 1, status: 'completed' },
+    { title: 'Persuasive Writing', weekNumber: 4, status: 'in_progress' },
+    { title: 'Narrative Composition', weekNumber: 7, status: 'pending' },
+    { title: 'Spoken Language Endorsement', weekNumber: 10, status: 'pending' },
+  ] },
+];
+
+// ── Teacher Reviews ───────────────────────────────────────────────────────────
+
+export const teacherReviews: TeacherReview[] = [
+  { id: 'rev-001', teacherId: 'tc-001', reviewerId: 'u-co-001', date: daysAgo(15), category: 'lesson_observation', rating: 4.8, strengths: 'Exceptional command of subject, clear explanations, excellent pacing.', improvements: 'Could involve quieter students more during Q&A.', status: 'completed' },
+  { id: 'rev-002', teacherId: 'tc-002', reviewerId: 'u-co-001', date: daysAgo(22), category: 'peer_review', rating: 4.5, strengths: 'Strong lab safety practices, engaging demonstrations.', improvements: 'Provide more worked examples before independent practice.', status: 'completed' },
+  { id: 'rev-003', teacherId: 'tc-004', reviewerId: 'u-co-001', date: daysAgo(8), category: 'student_feedback', rating: 4.6, strengths: 'Students report feeling supported, great feedback turnaround on essays.', improvements: 'Some students would like more structured revision sessions.', status: 'completed' },
+  { id: 'rev-004', teacherId: 'tc-006', reviewerId: 'u-co-001', date: daysAgo(3), category: 'lesson_observation', rating: 4.9, strengths: 'University-level rigor, excellent use of real-world UAE examples.', improvements: 'Consider differentiating pace for students who are behind.', status: 'completed' },
+  { id: 'rev-005', teacherId: 'tc-003', reviewerId: 'u-co-001', date: daysAgo(-2), category: 'peer_review', rating: 0, strengths: '', improvements: '', status: 'draft' },
+];
+
+// ── Interventions ─────────────────────────────────────────────────────────────
+
+export const interventions: Intervention[] = [
+  { id: 'int-001', studentId: 'st-012', reason: 'Attendance dropped to 37.5%, mock exam score 60% (C grade), missed 5 of last 8 Economics sessions.', type: 'attendance', startDate: daysAgo(1), targetDate: daysAgo(-30), status: 'active', actions: ['Weekly check-in call with parent', 'Mandatory catch-up sessions for missed topics', 'Counselling meeting booked with Staff 7'], ownerId: 'u-tc-006' },
+  { id: 'int-002', studentId: 'st-004', reason: 'Scored C grade in Waves Quiz (65%) — below target band for IGCSE Physics.', type: 'academic', startDate: daysAgo(20), targetDate: daysAgo(-10), status: 'monitoring', actions: ['Extra revision worksheet on longitudinal waves', 'Paired with high-performing peer for study group'], ownerId: 'u-tc-001' },
+  { id: 'int-003', studentId: 'st-010', reason: 'Low XP and streak (880 XP, 3-day streak) suggest disengagement with platform and homework.', type: 'behavioral', startDate: daysAgo(10), targetDate: daysAgo(-20), status: 'monitoring', actions: ['AI Tutor usage encouraged for daily practice', 'Parent notified to encourage consistent study routine'], ownerId: 'u-co-001' },
+  { id: 'int-004', studentId: 'st-007', reason: 'Missed Biology homework deadline twice in a row.', type: 'academic', startDate: daysAgo(40), targetDate: daysAgo(20), status: 'resolved', actions: ['One-on-one session with teacher', 'Homework reminders enabled'], ownerId: 'u-tc-002' },
+];
+
+// ── Payment Plans ─────────────────────────────────────────────────────────────
+
+export const paymentPlans: PaymentPlan[] = [
+  { id: 'pp-001', invoiceId: 'inv-003', studentId: 'st-003', createdAt: daysAgo(18), installments: [
+    { dueDate: daysAgo(10), amount: 1150, status: 'paid' },
+    { dueDate: daysAgo(-10), amount: 1150, status: 'pending' },
+  ] },
+  { id: 'pp-002', invoiceId: 'inv-007', studentId: 'st-008', createdAt: daysAgo(15), installments: [
+    { dueDate: daysAgo(5), amount: 1300, status: 'overdue' },
+    { dueDate: daysAgo(-25), amount: 1300, status: 'pending' },
+  ] },
+  { id: 'pp-003', invoiceId: 'inv-012', studentId: 'st-012', createdAt: daysAgo(25), installments: [
+    { dueDate: daysAgo(20), amount: 433.33, status: 'paid' },
+    { dueDate: daysAgo(-10), amount: 433.33, status: 'overdue' },
+    { dueDate: daysAgo(-40), amount: 433.34, status: 'pending' },
+  ] },
+  { id: 'pp-004', invoiceId: 'inv-013', studentId: 'st-001', createdAt: daysAgo(50), installments: [
+    { dueDate: daysAgo(50), amount: 2400, status: 'paid' },
+    { dueDate: daysAgo(20), amount: 2400, status: 'paid' },
+    { dueDate: daysAgo(-10), amount: 2400, status: 'pending' },
+  ] },
+  { id: 'pp-005', invoiceId: 'inv-014', studentId: 'st-002', createdAt: daysAgo(60), installments: [
+    { dueDate: daysAgo(60), amount: 2400, status: 'paid' },
+    { dueDate: daysAgo(30), amount: 2400, status: 'overdue' },
+    { dueDate: daysAgo(-5), amount: 2400, status: 'pending' },
+    { dueDate: daysAgo(-35), amount: 2400, status: 'pending' },
+  ] },
+];
+
+// ── Expenses ──────────────────────────────────────────────────────────────────
+
+export const expenses: Expense[] = [
+  { id: 'exp-001', branchId: 'br-001', category: 'rent', description: 'Monthly rent — Al Qusais centre', amount: 45000, date: daysAgo(5), approvedBy: 'u-sa-001' },
+  { id: 'exp-002', branchId: 'br-001', category: 'salaries', description: 'Teaching staff payroll — November', amount: 128000, date: daysAgo(3), approvedBy: 'u-sa-001' },
+  { id: 'exp-003', branchId: 'br-001', category: 'utilities', description: 'DEWA electricity & water bill', amount: 6200, date: daysAgo(8) },
+  { id: 'exp-004', branchId: 'br-002', category: 'rent', description: 'Monthly rent — Al Majaz centre', amount: 32000, date: daysAgo(5), approvedBy: 'u-sa-001' },
+  { id: 'exp-005', branchId: 'br-002', category: 'marketing', description: 'WhatsApp broadcast campaign — CBSE boards', amount: 1200, date: daysAgo(15) },
+  { id: 'exp-006', branchId: 'br-002', category: 'rent', description: 'Additional premises lease — Al Majaz expansion floor', amount: 38000, date: daysAgo(5), approvedBy: 'u-sa-001' },
+  { id: 'exp-007', branchId: 'br-002', category: 'maintenance', description: 'Lab equipment repair — Room 301', amount: 2400, date: daysAgo(12) },
+  { id: 'exp-008', branchId: 'br-001', category: 'supplies', description: 'Stationery and printed worksheets', amount: 1800, date: daysAgo(9) },
+  { id: 'exp-009', branchId: 'br-001', category: 'marketing', description: 'Back to School 2024 social campaign', amount: 8000, date: daysAgo(40) },
+  { id: 'exp-010', branchId: 'br-002', category: 'salaries', description: 'Teaching staff payroll — November', amount: 64000, date: daysAgo(3), approvedBy: 'u-sa-001' },
+];
+
+// ── Study Plans ───────────────────────────────────────────────────────────────
+
+export const studyPlans: StudyPlan[] = [
+  { studentId: 'st-001', subject: 'Chemistry', weeklyGoal: 6, generatedAt: daysAgo(2), topics: [
+    { id: 'sp-001', title: 'Substitution Reactions Review', estimatedHours: 1.5, priority: 'high', completed: false, dueDate: daysAgo(-3) },
+    { id: 'sp-002', title: 'Ester Naming Practice', estimatedHours: 1, priority: 'high', completed: true },
+    { id: 'sp-003', title: 'Alkene Reactions Worksheet', estimatedHours: 1.5, priority: 'medium', completed: false, dueDate: daysAgo(-6) },
+    { id: 'sp-004', title: 'Past Paper — Organic Chemistry', estimatedHours: 2, priority: 'low', completed: false, dueDate: daysAgo(-10) },
+  ] },
+];
+
+// ── Programmes (enrichment / test-prep — Robotics, Brainobrain, Oratory, IELTS, SAT, NEET/IIT-JEE, Languages) ──
+
+export const programmes: Programme[] = [
+  { id: 'prog-001', name: 'Robotics Club', type: 'Robotics', branchId: 'br-001', instructorName: 'Staff 8', ageGroup: '8-14', studentIds: ['st-004', 'st-007'], status: 'active' },
+  { id: 'prog-002', name: 'Brainobrain — Mental Arithmetic & Abacus', type: 'Brainobrain', branchId: 'br-002', instructorName: 'Staff 9', ageGroup: '6-15', studentIds: ['st-010'], status: 'active' },
+  { id: 'prog-003', name: 'Oratory & Public Speaking', type: 'Oratory', branchId: 'br-001', instructorName: 'Staff 1', ageGroup: '10-17', studentIds: ['st-011'], status: 'active' },
+  { id: 'prog-004', name: 'IELTS Preparation (IDP Accredited)', type: 'IELTS', branchId: 'br-001', instructorName: 'Staff 10', ageGroup: '16+', studentIds: ['st-002', 'st-005'], status: 'active' },
+  { id: 'prog-005', name: 'SAT Preparation', type: 'SAT', branchId: 'br-002', instructorName: 'Staff 11', ageGroup: '15-18', studentIds: ['st-006'], status: 'active' },
+  { id: 'prog-006', name: 'NEET & IIT-JEE Coaching', type: 'NEET-JEE', branchId: 'br-002', instructorName: 'Staff 12', ageGroup: '15-18', studentIds: ['st-003', 'st-010'], status: 'active' },
+  { id: 'prog-007', name: 'Language Courses — Arabic & French', type: 'Languages', branchId: 'br-001', instructorName: 'Staff 13', ageGroup: 'All ages', studentIds: ['st-001'], status: 'active' },
+  { id: 'prog-008', name: 'IELTS Preparation — Al Majaz', type: 'IELTS', branchId: 'br-002', instructorName: 'Staff 14', ageGroup: '16+', studentIds: ['st-008', 'st-009'], status: 'active' },
+];
+
+// ── Go-Live Configuration ─────────────────────────────────────────────────────
+
+export const goLiveConfig: GoLiveConfig = {
+  stripeKey: '', stripePublic: '', s3Bucket: '', s3Region: '', s3AccessKey: '',
+  sendgridKey: '', fromEmail: '', fromName: '', wapiToken: '', wapiPhoneId: '',
+  anthropicKey: '', openaiKey: '', privacyUrl: '', termsUrl: '', refundUrl: '',
+  studentProApiKey: '', studentProSyncEnabled: false,
+};
 
 // ── Seed Data Export ──────────────────────────────────────────────────────────
 
@@ -681,4 +934,7 @@ export const seedData = {
   users, branches, students, teachers, parents, batches,
   attendance, homework, assessments, leads, invoices,
   messages, meetings, notifications, achievements, settings, conversations,
+  campaigns, scholarships, auditLog, branchRequests, classNotes, lessonLogs,
+  syllabusPlans, teacherReviews, interventions, paymentPlans, expenses, studyPlans,
+  goLiveConfig, programmes,
 };

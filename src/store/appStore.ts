@@ -3,9 +3,53 @@ import { persist } from 'zustand/middleware';
 import type {
   AuthUser, Branch, Student, Teacher, Parent, Batch, AttendanceRecord,
   Homework, Assessment, Lead, Invoice, Message, Meeting, Notification,
-  SystemSettings, AIConversation, Achievement, User
+  SystemSettings, AIConversation, Achievement, User,
+  Campaign, ScholarshipApplication, AuditLogEntry, BranchRequest, ClassNote,
+  SyllabusPlan, TeacherReview, Intervention, PaymentPlan, Expense, StudyPlan,
+  GoLiveConfig, Programme, LessonLog, UserRole
 } from '@/types';
 import { seedData } from '@/data/seed';
+import { toast } from '@/hooks/useToast';
+
+// Defense-in-depth: which roles may write to each entity domain. This mirrors
+// ROLE_PATH_ACCESS in App.tsx, but route guards alone don't stop a logged-in
+// user from calling a store action directly (e.g. via devtools console).
+const ROLE_ACCESS = {
+  branch: ['super_admin', 'branch_admin'],
+  student: ['super_admin', 'branch_admin', 'teacher', 'coordinator'],
+  teacher: ['super_admin', 'branch_admin'],
+  batch: ['super_admin', 'branch_admin'],
+  attendance: ['teacher', 'branch_admin'],
+  homework: ['teacher'],
+  assessment: ['teacher', 'coordinator'],
+  lead: ['sales'],
+  invoice: ['finance', 'super_admin'],
+  meeting: ['parent', 'teacher', 'coordinator'],
+  user: ['super_admin'],
+  settings: ['super_admin'],
+  campaign: ['sales'],
+  scholarship: ['sales', 'super_admin'],
+  branchRequest: ['branch_admin', 'teacher', 'parent'],
+  classNote: ['teacher'],
+  lessonLog: ['teacher'],
+  syllabusPlan: ['coordinator'],
+  teacherReview: ['coordinator'],
+  intervention: ['coordinator'],
+  paymentPlan: ['finance'],
+  expense: ['finance', 'branch_admin'],
+  programme: ['super_admin'],
+  goLiveConfig: ['super_admin'],
+} satisfies Record<string, UserRole[]>;
+
+function guardRole(get: () => AppState, domain: keyof typeof ROLE_ACCESS): boolean {
+  const role = get().currentUser?.role;
+  const allowed: UserRole[] = ROLE_ACCESS[domain];
+  if (!role || !allowed.includes(role)) {
+    toast.error('Not authorized', "You don't have permission to do that.");
+    return false;
+  }
+  return true;
+}
 
 interface AppState {
   // Auth
@@ -30,6 +74,20 @@ interface AppState {
   conversations: AIConversation[];
   achievements: Achievement[];
   settings: SystemSettings;
+  campaigns: Campaign[];
+  scholarships: ScholarshipApplication[];
+  auditLog: AuditLogEntry[];
+  branchRequests: BranchRequest[];
+  classNotes: ClassNote[];
+  lessonLogs: LessonLog[];
+  syllabusPlans: SyllabusPlan[];
+  teacherReviews: TeacherReview[];
+  interventions: Intervention[];
+  paymentPlans: PaymentPlan[];
+  expenses: Expense[];
+  studyPlans: StudyPlan[];
+  goLiveConfig: GoLiveConfig;
+  programmes: Programme[];
 
   // CRUD operations
   addBranch: (branch: Branch) => void;
@@ -67,6 +125,7 @@ interface AppState {
 
   addNotification: (n: Notification) => void;
   markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: (userId: string) => void;
 
   addConversation: (c: AIConversation) => void;
   updateConversation: (id: string, updates: Partial<AIConversation>) => void;
@@ -77,7 +136,87 @@ interface AppState {
   updateSettings: (updates: Partial<SystemSettings>) => void;
 
   addXP: (studentId: string, amount: number) => void;
+
+  addCampaign: (campaign: Campaign) => void;
+  updateCampaign: (id: string, updates: Partial<Campaign>) => void;
+
+  addScholarship: (s: ScholarshipApplication) => void;
+  updateScholarship: (id: string, updates: Partial<ScholarshipApplication>) => void;
+
+  addAuditLog: (entry: AuditLogEntry) => void;
+
+  addBranchRequest: (r: BranchRequest) => void;
+  updateBranchRequest: (id: string, updates: Partial<BranchRequest>) => void;
+
+  addClassNote: (note: ClassNote) => void;
+
+  addLessonLog: (log: LessonLog) => void;
+  updateLessonLog: (id: string, updates: Partial<LessonLog>) => void;
+
+  addSyllabusPlan: (plan: SyllabusPlan) => void;
+  updateSyllabusPlan: (id: string, updates: Partial<SyllabusPlan>) => void;
+
+  addTeacherReview: (review: TeacherReview) => void;
+  updateTeacherReview: (id: string, updates: Partial<TeacherReview>) => void;
+
+  addIntervention: (i: Intervention) => void;
+  updateIntervention: (id: string, updates: Partial<Intervention>) => void;
+
+  addPaymentPlan: (plan: PaymentPlan) => void;
+  updatePaymentPlan: (id: string, updates: Partial<PaymentPlan>) => void;
+
+  addExpense: (expense: Expense) => void;
+
+  addStudyPlan: (plan: StudyPlan) => void;
+  updateStudyPlan: (studentId: string, subject: string, updates: Partial<StudyPlan>) => void;
+
+  updateGoLiveConfig: (updates: Partial<GoLiveConfig>) => void;
+
+  addProgramme: (programme: Programme) => void;
+  updateProgramme: (id: string, updates: Partial<Programme>) => void;
+
+  importStoreSnapshot: (snapshot: PersistedSlice) => void;
 }
+
+// The slice of state that gets persisted to localStorage and round-tripped
+// through Export/Import in the Setup Wizard. Kept as one function so both
+// uses can never drift out of sync with each other.
+function pickPersistedSlice(state: AppState) {
+  return {
+    currentUser: state.currentUser,
+    students: state.students,
+    teachers: state.teachers,
+    batches: state.batches,
+    attendance: state.attendance,
+    homework: state.homework,
+    assessments: state.assessments,
+    leads: state.leads,
+    invoices: state.invoices,
+    messages: state.messages,
+    meetings: state.meetings,
+    notifications: state.notifications,
+    conversations: state.conversations,
+    settings: state.settings,
+    users: state.users,
+    branches: state.branches,
+    parents: state.parents,
+    campaigns: state.campaigns,
+    scholarships: state.scholarships,
+    auditLog: state.auditLog,
+    branchRequests: state.branchRequests,
+    classNotes: state.classNotes,
+    lessonLogs: state.lessonLogs,
+    syllabusPlans: state.syllabusPlans,
+    teacherReviews: state.teacherReviews,
+    interventions: state.interventions,
+    paymentPlans: state.paymentPlans,
+    expenses: state.expenses,
+    studyPlans: state.studyPlans,
+    goLiveConfig: state.goLiveConfig,
+    programmes: state.programmes,
+  };
+}
+type PersistedSlice = ReturnType<typeof pickPersistedSlice>;
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -88,24 +227,48 @@ export const useAppStore = create<AppState>()(
 
       setCurrentUser: (user) => set({ currentUser: user }),
 
-      addBranch: (branch) => set((s) => ({ branches: [...s.branches, branch] })),
-      updateBranch: (id, updates) =>
-        set((s) => ({ branches: s.branches.map((b) => (b.id === id ? { ...b, ...updates } : b)) })),
+      addBranch: (branch) => {
+        if (!guardRole(get, 'branch')) return;
+        set((s) => ({ branches: [...s.branches, branch] }));
+      },
+      updateBranch: (id, updates) => {
+        if (!guardRole(get, 'branch')) return;
+        set((s) => ({ branches: s.branches.map((b) => (b.id === id ? { ...b, ...updates } : b)) }));
+      },
 
-      addStudent: (student) => set((s) => ({ students: [...s.students, student] })),
-      updateStudent: (id, updates) =>
-        set((s) => ({ students: s.students.map((st) => (st.id === id ? { ...st, ...updates } : st)) })),
+      addStudent: (student) => {
+        if (!guardRole(get, 'student')) return;
+        set((s) => ({ students: [...s.students, student] }));
+      },
+      updateStudent: (id, updates) => {
+        if (!guardRole(get, 'student')) return;
+        set((s) => ({ students: s.students.map((st) => (st.id === id ? { ...st, ...updates } : st)) }));
+      },
 
-      addTeacher: (teacher) => set((s) => ({ teachers: [...s.teachers, teacher] })),
-      updateTeacher: (id, updates) =>
-        set((s) => ({ teachers: s.teachers.map((t) => (t.id === id ? { ...t, ...updates } : t)) })),
+      addTeacher: (teacher) => {
+        if (!guardRole(get, 'teacher')) return;
+        set((s) => ({ teachers: [...s.teachers, teacher] }));
+      },
+      updateTeacher: (id, updates) => {
+        if (!guardRole(get, 'teacher')) return;
+        set((s) => ({ teachers: s.teachers.map((t) => (t.id === id ? { ...t, ...updates } : t)) }));
+      },
 
-      addBatch: (batch) => set((s) => ({ batches: [...s.batches, batch] })),
-      updateBatch: (id, updates) =>
-        set((s) => ({ batches: s.batches.map((b) => (b.id === id ? { ...b, ...updates } : b)) })),
+      addBatch: (batch) => {
+        if (!guardRole(get, 'batch')) return;
+        set((s) => ({ batches: [...s.batches, batch] }));
+      },
+      updateBatch: (id, updates) => {
+        if (!guardRole(get, 'batch')) return;
+        set((s) => ({ batches: s.batches.map((b) => (b.id === id ? { ...b, ...updates } : b)) }));
+      },
 
-      addAttendance: (record) => set((s) => ({ attendance: [...s.attendance, record] })),
-      bulkAddAttendance: (records) =>
+      addAttendance: (record) => {
+        if (!guardRole(get, 'attendance')) return;
+        set((s) => ({ attendance: [...s.attendance, record] }));
+      },
+      bulkAddAttendance: (records) => {
+        if (!guardRole(get, 'attendance')) return;
         set((s) => {
           const existingKeys = new Set(s.attendance.map((a) => `${a.batchId}-${a.studentId}-${a.date}`));
           const newRecords = records.filter(
@@ -118,36 +281,67 @@ export const useAppStore = create<AppState>()(
             if (idx >= 0) updated[idx] = r;
           });
           return { attendance: [...updated.filter((a) => !records.find((r) => r.id === a.id)), ...newRecords, ...records.filter((r) => existingKeys.has(`${r.batchId}-${r.studentId}-${r.date}`))] };
-        }),
+        });
+      },
 
-      addHomework: (hw) => set((s) => ({ homework: [...s.homework, hw] })),
-      updateHomework: (id, updates) =>
-        set((s) => ({ homework: s.homework.map((h) => (h.id === id ? { ...h, ...updates } : h)) })),
+      addHomework: (hw) => {
+        if (!guardRole(get, 'homework')) return;
+        set((s) => ({ homework: [...s.homework, hw] }));
+      },
+      updateHomework: (id, updates) => {
+        if (!guardRole(get, 'homework')) return;
+        set((s) => ({ homework: s.homework.map((h) => (h.id === id ? { ...h, ...updates } : h)) }));
+      },
 
-      addAssessment: (a) => set((s) => ({ assessments: [...s.assessments, a] })),
-      updateAssessment: (id, updates) =>
-        set((s) => ({ assessments: s.assessments.map((a) => (a.id === id ? { ...a, ...updates } : a)) })),
+      addAssessment: (a) => {
+        if (!guardRole(get, 'assessment')) return;
+        set((s) => ({ assessments: [...s.assessments, a] }));
+      },
+      updateAssessment: (id, updates) => {
+        if (!guardRole(get, 'assessment')) return;
+        set((s) => ({ assessments: s.assessments.map((a) => (a.id === id ? { ...a, ...updates } : a)) }));
+      },
 
-      addLead: (lead) => set((s) => ({ leads: [...s.leads, lead] })),
-      updateLead: (id, updates) =>
-        set((s) => ({ leads: s.leads.map((l) => (l.id === id ? { ...l, ...updates } : l)) })),
+      addLead: (lead) => {
+        if (!guardRole(get, 'lead')) return;
+        set((s) => ({ leads: [...s.leads, lead] }));
+      },
+      updateLead: (id, updates) => {
+        if (!guardRole(get, 'lead')) return;
+        set((s) => ({ leads: s.leads.map((l) => (l.id === id ? { ...l, ...updates } : l)) }));
+      },
 
-      addInvoice: (invoice) => set((s) => ({ invoices: [...s.invoices, invoice] })),
-      updateInvoice: (id, updates) =>
-        set((s) => ({ invoices: s.invoices.map((i) => (i.id === id ? { ...i, ...updates } : i)) })),
+      addInvoice: (invoice) => {
+        if (!guardRole(get, 'invoice')) return;
+        set((s) => ({ invoices: [...s.invoices, invoice] }));
+      },
+      updateInvoice: (id, updates) => {
+        if (!guardRole(get, 'invoice')) return;
+        set((s) => ({ invoices: s.invoices.map((i) => (i.id === id ? { ...i, ...updates } : i)) }));
+      },
 
       addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
       markMessageRead: (id) =>
         set((s) => ({ messages: s.messages.map((m) => (m.id === id ? { ...m, isRead: true } : m)) })),
 
-      addMeeting: (meeting) => set((s) => ({ meetings: [...s.meetings, meeting] })),
-      updateMeeting: (id, updates) =>
-        set((s) => ({ meetings: s.meetings.map((m) => (m.id === id ? { ...m, ...updates } : m)) })),
+      addMeeting: (meeting) => {
+        if (!guardRole(get, 'meeting')) return;
+        set((s) => ({ meetings: [...s.meetings, meeting] }));
+      },
+      updateMeeting: (id, updates) => {
+        if (!guardRole(get, 'meeting')) return;
+        set((s) => ({ meetings: s.meetings.map((m) => (m.id === id ? { ...m, ...updates } : m)) }));
+      },
 
       addNotification: (n) => set((s) => ({ notifications: [...s.notifications, n] })),
       markNotificationRead: (id) =>
         set((s) => ({
           notifications: s.notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
+        })),
+
+      markAllNotificationsRead: (userId) =>
+        set((s) => ({
+          notifications: s.notifications.map((n) => (n.userId === userId ? { ...n, isRead: true } : n)),
         })),
 
       addConversation: (c) => set((s) => ({ conversations: [...s.conversations, c] })),
@@ -156,12 +350,19 @@ export const useAppStore = create<AppState>()(
           conversations: s.conversations.map((c) => (c.id === id ? { ...c, ...updates } : c)),
         })),
 
-      addUser: (user) => set((s) => ({ users: [...s.users, user] })),
-      updateUser: (id, updates) =>
-        set((s) => ({ users: s.users.map((u) => (u.id === id ? { ...u, ...updates } : u)) })),
+      addUser: (user) => {
+        if (!guardRole(get, 'user')) return;
+        set((s) => ({ users: [...s.users, user] }));
+      },
+      updateUser: (id, updates) => {
+        if (!guardRole(get, 'user')) return;
+        set((s) => ({ users: s.users.map((u) => (u.id === id ? { ...u, ...updates } : u)) }));
+      },
 
-      updateSettings: (updates) =>
-        set((s) => ({ settings: { ...s.settings, ...updates } })),
+      updateSettings: (updates) => {
+        if (!guardRole(get, 'settings')) return;
+        set((s) => ({ settings: { ...s.settings, ...updates } }));
+      },
 
       addXP: (studentId, amount) =>
         set((s) => {
@@ -183,30 +384,130 @@ export const useAppStore = create<AppState>()(
           });
           return { students };
         }),
+
+      addCampaign: (campaign) => {
+        if (!guardRole(get, 'campaign')) return;
+        set((s) => ({ campaigns: [...s.campaigns, campaign] }));
+      },
+      updateCampaign: (id, updates) => {
+        if (!guardRole(get, 'campaign')) return;
+        set((s) => ({ campaigns: s.campaigns.map((c) => (c.id === id ? { ...c, ...updates } : c)) }));
+      },
+
+      addScholarship: (sch) => {
+        if (!guardRole(get, 'scholarship')) return;
+        set((s) => ({ scholarships: [...s.scholarships, sch] }));
+      },
+      updateScholarship: (id, updates) => {
+        if (!guardRole(get, 'scholarship')) return;
+        set((s) => ({ scholarships: s.scholarships.map((sc) => (sc.id === id ? { ...sc, ...updates } : sc)) }));
+      },
+
+      addAuditLog: (entry) => set((s) => ({ auditLog: [entry, ...s.auditLog] })),
+
+      addBranchRequest: (r) => {
+        if (!guardRole(get, 'branchRequest')) return;
+        set((s) => ({ branchRequests: [...s.branchRequests, r] }));
+      },
+      updateBranchRequest: (id, updates) => {
+        if (!guardRole(get, 'branchRequest')) return;
+        set((s) => ({ branchRequests: s.branchRequests.map((r) => (r.id === id ? { ...r, ...updates } : r)) }));
+      },
+
+      addClassNote: (note) => {
+        if (!guardRole(get, 'classNote')) return;
+        set((s) => ({ classNotes: [...s.classNotes, note] }));
+      },
+
+      addLessonLog: (log) => {
+        if (!guardRole(get, 'lessonLog')) return;
+        set((s) => ({ lessonLogs: [...s.lessonLogs, log] }));
+      },
+      updateLessonLog: (id, updates) => {
+        if (!guardRole(get, 'lessonLog')) return;
+        set((s) => ({ lessonLogs: s.lessonLogs.map((l) => (l.id === id ? { ...l, ...updates } : l)) }));
+      },
+
+      addSyllabusPlan: (plan) => {
+        if (!guardRole(get, 'syllabusPlan')) return;
+        set((s) => ({ syllabusPlans: [...s.syllabusPlans, plan] }));
+      },
+      updateSyllabusPlan: (id, updates) => {
+        if (!guardRole(get, 'syllabusPlan')) return;
+        set((s) => ({ syllabusPlans: s.syllabusPlans.map((p) => (p.id === id ? { ...p, ...updates } : p)) }));
+      },
+
+      addTeacherReview: (review) => {
+        if (!guardRole(get, 'teacherReview')) return;
+        set((s) => ({ teacherReviews: [...s.teacherReviews, review] }));
+      },
+      updateTeacherReview: (id, updates) => {
+        if (!guardRole(get, 'teacherReview')) return;
+        set((s) => ({ teacherReviews: s.teacherReviews.map((r) => (r.id === id ? { ...r, ...updates } : r)) }));
+      },
+
+      addIntervention: (i) => {
+        if (!guardRole(get, 'intervention')) return;
+        set((s) => ({ interventions: [...s.interventions, i] }));
+      },
+      updateIntervention: (id, updates) => {
+        if (!guardRole(get, 'intervention')) return;
+        set((s) => ({ interventions: s.interventions.map((i) => (i.id === id ? { ...i, ...updates } : i)) }));
+      },
+
+      addPaymentPlan: (plan) => {
+        if (!guardRole(get, 'paymentPlan')) return;
+        set((s) => ({ paymentPlans: [...s.paymentPlans, plan] }));
+      },
+      updatePaymentPlan: (id, updates) => {
+        if (!guardRole(get, 'paymentPlan')) return;
+        set((s) => ({ paymentPlans: s.paymentPlans.map((p) => (p.id === id ? { ...p, ...updates } : p)) }));
+      },
+
+      addExpense: (expense) => {
+        if (!guardRole(get, 'expense')) return;
+        set((s) => ({ expenses: [...s.expenses, expense] }));
+      },
+
+      addStudyPlan: (plan) => set((s) => ({ studyPlans: [...s.studyPlans, plan] })),
+      updateStudyPlan: (studentId, subject, updates) =>
+        set((s) => ({
+          studyPlans: s.studyPlans.map((p) =>
+            p.studentId === studentId && p.subject === subject ? { ...p, ...updates } : p
+          ),
+        })),
+
+      updateGoLiveConfig: (updates) => {
+        if (!guardRole(get, 'goLiveConfig')) return;
+        set((s) => ({ goLiveConfig: { ...s.goLiveConfig, ...updates } }));
+      },
+
+      addProgramme: (programme) => {
+        if (!guardRole(get, 'programme')) return;
+        set((s) => ({ programmes: [...s.programmes, programme] }));
+      },
+      updateProgramme: (id, updates) => {
+        if (!guardRole(get, 'programme')) return;
+        set((s) => ({ programmes: s.programmes.map((p) => (p.id === id ? { ...p, ...updates } : p)) }));
+      },
+
+      importStoreSnapshot: (snapshot) => {
+        if (!guardRole(get, 'settings')) return;
+        set(() => snapshot);
+      },
     }),
     {
       name: 'platos-planet-store',
-      version: 2,
+      version: 7,
       migrate: () => ({ currentUser: null, ...seedData }),
-      partialize: (state) => ({
-        currentUser: state.currentUser,
-        students: state.students,
-        teachers: state.teachers,
-        batches: state.batches,
-        attendance: state.attendance,
-        homework: state.homework,
-        assessments: state.assessments,
-        leads: state.leads,
-        invoices: state.invoices,
-        messages: state.messages,
-        meetings: state.meetings,
-        notifications: state.notifications,
-        conversations: state.conversations,
-        settings: state.settings,
-        users: state.users,
-        branches: state.branches,
-        parents: state.parents,
-      }),
+      partialize: pickPersistedSlice,
     }
   )
 );
+
+// Exports the same slice of state that gets persisted to localStorage, as a
+// JSON string — used for the Setup Wizard's backup/restore and for moving
+// data between devices ahead of a future real-backend migration.
+export function exportStoreSnapshot(): string {
+  return JSON.stringify(pickPersistedSlice(useAppStore.getState()));
+}

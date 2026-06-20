@@ -13,6 +13,14 @@ export type UserRole =
 
 export type Curriculum = 'IGCSE' | 'A-Level' | 'CBSE' | 'IB' | 'American';
 
+export type Emirate = 'Dubai' | 'Sharjah' | 'Abu Dhabi' | 'Ajman' | 'Umm Al Quwain' | 'Ras Al Khaimah' | 'Fujairah';
+
+export type BranchStatus = 'active' | 'inactive' | 'coming_soon';
+
+// Enrichment / test-prep offerings — distinct from graded academic Curriculum above,
+// since these aren't percentage-graded the same way (skill-based or band/score-based).
+export type ProgrammeType = 'Robotics' | 'Brainobrain' | 'Oratory' | 'IELTS' | 'SAT' | 'NEET-JEE' | 'Languages';
+
 export type Subject =
   | 'Physics'
   | 'Chemistry'
@@ -30,7 +38,7 @@ export type Subject =
 
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
 export type LeadStatus = 'new' | 'contacted' | 'trial_scheduled' | 'trial_done' | 'enrolled' | 'lost';
-export type FeeStatus = 'paid' | 'pending' | 'overdue' | 'waived';
+export type FeeStatus = 'paid' | 'pending' | 'overdue' | 'waived' | 'partial';
 export type HomeworkStatus = 'assigned' | 'submitted' | 'graded' | 'missing';
 export type BatchStatus = 'active' | 'inactive' | 'full' | 'upcoming';
 
@@ -47,6 +55,8 @@ export interface User {
   isActive: boolean;
   createdAt: string;
   lastLogin?: string;
+  employeeId?: string;
+  joinDate?: string;
 }
 
 // ── Branch ────────────────────────────────────────────────────────────────────
@@ -57,10 +67,14 @@ export interface Branch {
   address: string;
   city: string;
   country: string;
+  emirate?: Emirate;
   phone: string;
+  whatsappNumber?: string;
   email: string;
   adminId?: string;
+  managerId?: string;
   isActive: boolean;
+  status?: BranchStatus;
   capacity: number;
   establishedYear: number;
 }
@@ -85,6 +99,9 @@ export interface Student {
   planet: PlanetLevel;
   subjects: Subject[];
   batchIds: string[];
+  dateOfBirth?: string;
+  nationality?: string;
+  gender?: 'Male' | 'Female' | 'Other';
 }
 
 export type PlanetLevel = 'Mercury' | 'Venus' | 'Earth' | 'Mars' | 'Jupiter' | 'Saturn' | 'Neptune' | 'Pluto';
@@ -113,6 +130,8 @@ export interface Teacher {
   branchId: string;
   subjects: Subject[];
   curriculums: Curriculum[];
+  teachingAreas?: string[];
+  maxClassesPerWeek?: number;
   qualification: string;
   experience: number;
   rating: number;
@@ -131,6 +150,7 @@ export interface Parent {
   phone: string;
   studentIds: string[];
   branchId?: string;
+  relationship?: string;
 }
 
 // ── Batch ─────────────────────────────────────────────────────────────────────
@@ -231,6 +251,7 @@ export interface Lead {
   studentName: string;
   studentAge?: number;
   curriculum: Curriculum;
+  preferredProgramme?: string;
   subjects: Subject[];
   grade: string;
   source: 'website' | 'walk_in' | 'referral' | 'social_media' | 'google_ads' | 'whatsapp';
@@ -240,6 +261,10 @@ export interface Lead {
   notes?: string;
   followUpDate?: string;
   trialDate?: string;
+  trialTimeSlot?: string;
+  dateOfBirth?: string;
+  nationality?: string;
+  referrerName?: string;
   createdAt: string;
   convertedAt?: string;
 }
@@ -270,8 +295,19 @@ export interface Invoice {
   dueDate: string;
   issuedDate: string;
   paidDate?: string;
-  paymentMethod?: 'cash' | 'card' | 'bank_transfer' | 'online';
+  paymentMethod?: 'cash' | 'card' | 'bank_transfer' | 'online' | 'cheque';
   invoiceNumber: string;
+  paidAmount?: number;
+  paymentHistory?: PaymentRecord[];
+  notes?: string;
+}
+
+export interface PaymentRecord {
+  date: string;
+  amount: number;
+  method: string;
+  reference?: string;
+  notes?: string;
 }
 
 export interface InvoiceItem {
@@ -351,6 +387,7 @@ export interface AIMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  saved?: boolean;
 }
 
 export interface StudyPlan {
@@ -383,6 +420,204 @@ export interface Achievement {
   category: 'attendance' | 'academic' | 'streak' | 'homework' | 'special';
 }
 
+// ── Campaign ──────────────────────────────────────────────────────────────────
+
+export interface Campaign {
+  id: string;
+  name: string;
+  channel: 'social_media' | 'google_ads' | 'referral' | 'whatsapp' | 'email';
+  branchId: string;
+  startDate: string;
+  endDate?: string;
+  budget: number;
+  leadsGenerated: number;
+  conversions: number;
+  status: 'active' | 'paused' | 'ended';
+}
+
+// ── Scholarship ───────────────────────────────────────────────────────────────
+
+export interface ScholarshipApplication {
+  id: string;
+  studentId: string;
+  type: 'merit' | 'need_based' | 'sibling' | 'staff';
+  requestedPercentage: number;
+  approvedPercentage?: number;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: string;
+  reviewedBy?: string;
+}
+
+// ── Audit Log ─────────────────────────────────────────────────────────────────
+
+export interface AuditLogEntry {
+  id: string;
+  userId: string;
+  action: string;
+  entityType: string;
+  entityId?: string;
+  details: string;
+  timestamp: string;
+  severity: 'info' | 'warning' | 'critical';
+}
+
+// ── Branch Request ────────────────────────────────────────────────────────────
+
+export interface BranchRequest {
+  id: string;
+  branchId: string;
+  requestedBy: string;
+  type: 'leave' | 'room_booking' | 'parent_request' | 'resource';
+  title: string;
+  description: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  resolvedAt?: string;
+  declineReason?: string;
+}
+
+// ── Class Note ────────────────────────────────────────────────────────────────
+// Shared lesson materials (uploaded by teachers, visible to students in
+// Resources). Distinct from LessonLog below, which is the teacher's private
+// per-lesson log — they intentionally don't share a data model.
+
+export interface ClassNote {
+  id: string;
+  batchId: string;
+  teacherId: string;
+  title: string;
+  description?: string;
+  subject: Subject;
+  fileType: 'pdf' | 'doc' | 'slides' | 'video' | 'link';
+  uploadedAt: string;
+}
+
+// ── Lesson Log ────────────────────────────────────────────────────────────────
+// A teacher's structured record of what happened in a specific class session —
+// not visible to students (Private Notes especially), unlike ClassNote above.
+
+export interface LessonLog {
+  id: string;
+  batchId: string;
+  teacherId: string;
+  date: string;
+  topicCovered: string;
+  homeworkId?: string;
+  nextClassPlan: string;
+  privateNotes?: string;
+}
+
+// ── Syllabus Plan ─────────────────────────────────────────────────────────────
+
+export interface SyllabusTopic {
+  title: string;
+  weekNumber: number;
+  status: 'pending' | 'in_progress' | 'completed';
+}
+
+export interface SyllabusPlan {
+  id: string;
+  batchId: string;
+  subject: Subject;
+  curriculum: Curriculum;
+  term: string;
+  topics: SyllabusTopic[];
+}
+
+// ── Teacher Review ────────────────────────────────────────────────────────────
+
+export interface TeacherReview {
+  id: string;
+  teacherId: string;
+  reviewerId: string;
+  date: string;
+  category: 'lesson_observation' | 'peer_review' | 'student_feedback';
+  rating: number;
+  strengths: string;
+  improvements: string;
+  status: 'draft' | 'completed';
+}
+
+// ── Intervention ──────────────────────────────────────────────────────────────
+
+export interface Intervention {
+  id: string;
+  studentId: string;
+  reason: string;
+  type: 'academic' | 'attendance' | 'behavioral';
+  startDate: string;
+  targetDate: string;
+  status: 'active' | 'monitoring' | 'resolved';
+  actions: string[];
+  ownerId: string;
+}
+
+// ── Payment Plan ──────────────────────────────────────────────────────────────
+
+export interface PaymentInstallment {
+  dueDate: string;
+  amount: number;
+  status: 'paid' | 'pending' | 'overdue';
+}
+
+export interface PaymentPlan {
+  id: string;
+  invoiceId: string;
+  studentId: string;
+  installments: PaymentInstallment[];
+  createdAt: string;
+}
+
+// ── Expense ───────────────────────────────────────────────────────────────────
+
+export interface Expense {
+  id: string;
+  branchId: string;
+  category: 'rent' | 'salaries' | 'utilities' | 'marketing' | 'supplies' | 'maintenance' | 'other';
+  description: string;
+  amount: number;
+  date: string;
+  approvedBy?: string;
+}
+
+// ── Programme (enrichment / test-prep) ───────────────────────────────────────
+
+export interface Programme {
+  id: string;
+  name: string;
+  type: ProgrammeType;
+  branchId: string;
+  instructorName: string;
+  ageGroup: string;
+  studentIds: string[];
+  status: 'active' | 'inactive' | 'upcoming';
+}
+
+// ── Go-Live Configuration ────────────────────────────────────────────────────
+// NOTE: this is demo-only configuration storage (persisted to localStorage,
+// unencrypted). Never enter real production secrets here — see GoLivePage.
+
+export interface GoLiveConfig {
+  stripeKey: string;
+  stripePublic: string;
+  s3Bucket: string;
+  s3Region: string;
+  s3AccessKey: string;
+  sendgridKey: string;
+  fromEmail: string;
+  fromName: string;
+  wapiToken: string;
+  wapiPhoneId: string;
+  anthropicKey: string;
+  openaiKey: string;
+  privacyUrl: string;
+  termsUrl: string;
+  refundUrl: string;
+  studentProApiKey: string;
+  studentProSyncEnabled: boolean;
+}
+
 // ── Settings ──────────────────────────────────────────────────────────────────
 
 export interface SystemSettings {
@@ -402,4 +637,7 @@ export interface SystemSettings {
   whatsappEnabled: boolean;
   aiProvider?: string;
   isLive: boolean;
+  primaryColor?: string;
+  currentTerm?: string;
+  mode: 'demo' | 'live';
 }

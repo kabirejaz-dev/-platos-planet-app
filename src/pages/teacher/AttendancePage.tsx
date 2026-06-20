@@ -22,7 +22,7 @@ export default function AttendancePage() {
   const [selectedBatch, setSelectedBatch] = useState(myBatches[0]?.id || '')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [marks, setMarks] = useState<Record<string, AttendanceStatus>>({})
-  const [notes, setNotes] = useState<Record<string, string>>({})
+  const [notes] = useState<Record<string, string>>({})
   const [saved, setSaved] = useState(false)
 
   const batch = batches.find((b) => b.id === selectedBatch)

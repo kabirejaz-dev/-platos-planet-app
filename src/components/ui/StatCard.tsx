@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { DemoBadge } from './DemoBadge'
 
 interface StatCardProps {
@@ -111,16 +111,18 @@ export function StatCard({
           <div
             className="flex items-center gap-1 px-2 py-0.5 rounded-full"
             style={{
-              background: isPositive ? 'rgba(0,255,163,0.08)' : 'rgba(255,107,122,0.08)',
-              border: `1px solid ${isPositive ? 'rgba(0,255,163,0.2)' : 'rgba(255,107,122,0.2)'}`,
+              background: change === 0 ? 'rgba(148,163,184,0.08)' : isPositive ? 'rgba(0,255,163,0.08)' : 'rgba(255,107,122,0.08)',
+              border: `1px solid ${change === 0 ? 'rgba(148,163,184,0.2)' : isPositive ? 'rgba(0,255,163,0.2)' : 'rgba(255,107,122,0.2)'}`,
             }}
           >
-            {isPositive
-              ? <TrendingUp size={11} style={{ color: '#00FFA3' }} />
-              : <TrendingDown size={11} style={{ color: '#FF6B7A' }} />
+            {change === 0
+              ? <Minus size={11} style={{ color: 'rgba(148,163,184,0.9)' }} />
+              : isPositive
+                ? <TrendingUp size={11} style={{ color: '#00FFA3' }} />
+                : <TrendingDown size={11} style={{ color: '#FF6B7A' }} />
             }
-            <span className="text-[11px] font-semibold" style={{ color: isPositive ? '#00FFA3' : '#FF6B7A' }}>
-              {isPositive ? '+' : ''}{change}%
+            <span className="text-[11px] font-semibold" style={{ color: change === 0 ? 'rgba(148,163,184,0.9)' : isPositive ? '#00FFA3' : '#FF6B7A' }}>
+              {change === 0 ? 'No change' : `${isPositive ? '+' : ''}${change}%`}
             </span>
           </div>
           {changeLabel && (

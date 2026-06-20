@@ -3,11 +3,13 @@ import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
+import { FieldError, fieldInputClass } from '@/components/ui/FormField'
 import { generateId, formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
-import { Plus, Printer } from 'lucide-react'
+import { invoiceSchema, getFieldErrors } from '@/lib/schemas'
+import { Plus, Printer, Download } from 'lucide-react'
 
 export default function InvoicesPage() {
-  const { invoices, students, parents, branches, addInvoice, updateInvoice } = useAppStore()
+  const { invoices, students, parents, branches, settings, addInvoice, updateInvoice } = useAppStore()
   const [showModal, setShowModal] = useState(false)
   const [showReceipt, setShowReceipt] = useState<string | null>(null)
   const [form, setForm] = useState({
@@ -17,8 +19,11 @@ export default function InvoicesPage() {
     dueDate: '',
     paymentMethod: 'card' as 'cash' | 'card' | 'bank_transfer' | 'online',
   })
+  const [errors, setErrors] = useState<Partial<Record<'description' | 'amount' | 'dueDate', string>>>({})
 
   const handleCreate = () => {
+    const fieldErrors = getFieldErrors(invoiceSchema, form)
+    if (Object.keys(fieldErrors).length > 0) { setErrors(fieldErrors); return }
     const student = students.find((s) => s.id === form.studentId)
     const parent = parents.find((p) => p.studentIds.includes(form.studentId))
     const invNum = `INV-${new Date().getFullYear()}-${String(invoices.length + 1).padStart(3, '0')}`
@@ -37,10 +42,39 @@ export default function InvoicesPage() {
       issuedDate: new Date().toISOString().split('T')[0],
     })
     setShowModal(false)
+    setErrors({})
   }
 
   const receiptInv = invoices.find((i) => i.id === showReceipt)
   const receiptStudent = students.find((s) => s.id === receiptInv?.studentId)
+  const receiptBranch = branches.find((b) => b.id === receiptInv?.branchId)
+
+  const downloadReceipt = () => {
+    if (!receiptInv || !receiptStudent) return
+    const lines = [
+      settings.companyName,
+      `${receiptBranch?.name || ''} · ${receiptBranch?.address || ''}`,
+      settings.vatNumber ? `VAT ${settings.vatNumber}` : '',
+      '',
+      `Invoice #: ${receiptInv.invoiceNumber}`,
+      `Student: ${receiptStudent.name}`,
+      `Issue Date: ${formatDate(receiptInv.issuedDate)}`,
+      `Status: ${receiptInv.status}`,
+      '',
+      ...receiptInv.items.map((item) => `${item.description}: ${formatCurrency(item.amount * item.quantity, receiptInv.currency)}`),
+      '',
+      `Total: ${formatCurrency(receiptInv.totalAmount, receiptInv.currency)}`,
+      '',
+      "Thank you for choosing Plato's Planet Digital.",
+    ]
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `Receipt-${receiptInv.invoiceNumber}.txt`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="space-y-6">
@@ -119,8 +153,8 @@ export default function InvoicesPage() {
         <Modal open={!!showReceipt} onClose={() => setShowReceipt(null)} title="Invoice Receipt" size="md">
           <div className="space-y-4 font-mono text-sm">
             <div className="text-center pb-4 border-b border-dark-border">
-              <p className="text-lg font-bold text-foreground font-display">Plato's Planet Digital</p>
-              <p className="text-xs text-muted-foreground">Dubai Marina Centre · VAT TRN100234567890003</p>
+              <p className="text-lg font-bold text-foreground font-display">{settings.companyName}</p>
+              <p className="text-xs text-muted-foreground">{receiptBranch?.name} · VAT {settings.vatNumber}</p>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Invoice #</span>
@@ -151,11 +185,14 @@ export default function InvoicesPage() {
               </div>
             </div>
             <p className="text-xs text-center text-muted-foreground pt-2">Thank you for choosing Plato's Planet Digital.</p>
+            <button className="btn-primary w-full justify-center" onClick={downloadReceipt}>
+              <Download size={14} /> Download Receipt
+            </button>
           </div>
         </Modal>
       )}
 
-      <Modal open={showModal} onClose={() => setShowModal(false)} title="Create Invoice">
+      <Modal open={showModal} onClose={() => { setShowModal(false); setErrors({}) }} title="Create Invoice">
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Student</label>
@@ -165,20 +202,23 @@ export default function InvoicesPage() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Description</label>
-            <input className="plato-input" placeholder="e.g. IGCSE Physics — November 2024" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            <input className={fieldInputClass(errors.description)} placeholder="e.g. IGCSE Physics — November 2024" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            <FieldError message={errors.description} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Amount (AED)</label>
-              <input type="number" className="plato-input" placeholder="1200" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+              <input type="number" className={fieldInputClass(errors.amount)} placeholder="1200" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+              <FieldError message={errors.amount} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Due Date</label>
-              <input type="date" className="plato-input" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
+              <input type="date" className={fieldInputClass(errors.dueDate)} value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
+              <FieldError message={errors.dueDate} />
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button className="btn-ghost flex-1 justify-center border border-dark-border" onClick={() => setShowModal(false)}>Cancel</button>
+            <button className="btn-ghost flex-1 justify-center border border-dark-border" onClick={() => { setShowModal(false); setErrors({}) }}>Cancel</button>
             <button className="btn-primary flex-1 justify-center" onClick={handleCreate} disabled={!form.description || !form.amount || !form.dueDate}>Create Invoice</button>
           </div>
         </div>

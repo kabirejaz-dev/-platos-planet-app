@@ -3,13 +3,13 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard } from '@/components/ui/StatCard'
 import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
-import { formatDate, calculateAttendanceRate, getStatusColor } from '@/lib/utils'
+import { calculateAttendanceRate } from '@/lib/utils'
 import { Link } from 'react-router-dom'
-import { GraduationCap, Users, BookOpen, UserCheck, ArrowRight, Plus } from 'lucide-react'
+import { GraduationCap, Users, BookOpen, UserCheck, ArrowRight, Plus, ClipboardCheck } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function BranchAdminDashboard() {
-  const { currentUser, students, teachers, batches, attendance, invoices, branches } = useAppStore()
+  const { currentUser, students, teachers, batches, attendance, branches } = useAppStore()
 
   const branchId = currentUser?.branchId
   const branch = branches.find((b) => b.id === branchId)
@@ -50,7 +50,13 @@ export default function BranchAdminDashboard() {
         <StatCard label="Active Students" value={branchStudents.length} icon={<GraduationCap size={18} />} color="#4D7CFF" demo={false} sub={`${branch?.capacity || 0} capacity`} />
         <StatCard label="Teachers" value={branchTeachers.length} icon={<Users size={18} />} color="#7B61FF" demo={false} />
         <StatCard label="Active Batches" value={branchBatches.length} icon={<BookOpen size={18} />} color="#00F0FF" demo={false} />
-        <StatCard label="Today Attendance" value={`${todayRate}%`} icon={<UserCheck size={18} />} color={todayRate >= 80 ? '#00FFA3' : '#FF6B7A'} demo={false} />
+        <StatCard
+          label="Today Attendance"
+          value={todayAtt.length === 0 ? 'Not marked yet' : `${todayRate}%`}
+          icon={<UserCheck size={18} />}
+          color={todayAtt.length === 0 ? '#FBBF24' : todayRate >= 80 ? '#00FFA3' : '#FF6B7A'}
+          demo={false}
+        />
       </div>
 
       {/* Attendance chart */}
@@ -95,6 +101,13 @@ export default function BranchAdminDashboard() {
               )
             })}
           </div>
+          <Link
+            to="/branch-admin/attendance"
+            className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', color: '#FBBF24' }}
+          >
+            <ClipboardCheck size={15} /> Mark Today's Attendance <ArrowRight size={14} />
+          </Link>
         </div>
 
         {/* Students needing attention */}

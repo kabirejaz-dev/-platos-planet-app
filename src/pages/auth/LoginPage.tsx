@@ -1,8 +1,12 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import type { UserRole, AuthUser } from '@/types'
-import { Eye, EyeOff, Loader2, Sparkles, Zap, Users, Globe } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Sparkles, Zap, Users, Globe, X } from 'lucide-react'
+import { Modal } from '@/components/ui/Modal'
+import { isValidEmail, EMAIL_ERROR } from '@/lib/validation'
+
+const REMEMBERED_EMAIL_KEY = 'platos-planet-remembered-email'
 
 const DEMO_ACCOUNTS: Array<{
   role: UserRole
@@ -52,6 +56,17 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
+  const [showForgotPw, setShowForgotPw] = useState(false)
+
+  useEffect(() => {
+    const remembered = localStorage.getItem(REMEMBERED_EMAIL_KEY)
+    if (remembered) {
+      setEmail(remembered)
+      setRememberMe(true)
+    }
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -60,10 +75,12 @@ export default function LoginPage() {
     await new Promise((r) => setTimeout(r, 600))
     const account = DEMO_ACCOUNTS.find((a) => a.email === email && a.password === password)
     if (!account) {
-      setError('Invalid credentials. Try a demo account below.')
+      setError('Invalid email or password. Please try again.')
       setLoading(false)
       return
     }
+    if (rememberMe) localStorage.setItem(REMEMBERED_EMAIL_KEY, email)
+    else localStorage.removeItem(REMEMBERED_EMAIL_KEY)
     const authUser: AuthUser = {
       id: account.userId,
       name: account.name,
@@ -192,7 +209,7 @@ export default function LoginPage() {
           <div className="grid grid-cols-3 gap-3 pt-2">
             {[
               { value: '9', label: 'User Roles' },
-              { value: '3+', label: 'Curricula' },
+              { value: '8+', label: 'Programmes' },
               { value: 'AI-First', label: 'Platform' },
             ].map((s) => (
               <div
@@ -210,9 +227,18 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="relative text-[11px]" style={{ color: 'rgba(100,116,139,0.5)' }}>
-          © 2026 Plato's Planet Digital. All rights reserved.
-        </p>
+        <div className="relative space-y-2">
+          <p className="text-[11px]" style={{ color: 'rgba(100,116,139,0.5)' }}>
+            © 2026 Plato's Planet Digital. All rights reserved.
+          </p>
+          <div className="flex items-center gap-3 text-[11px]" style={{ color: 'rgba(100,116,139,0.5)' }}>
+            <Link to="/privacy" className="hover:underline">Privacy</Link>
+            <span>·</span>
+            <Link to="/terms" className="hover:underline">Terms</Link>
+            <span>·</span>
+            <Link to="/refund" className="hover:underline">Refunds</Link>
+          </div>
+        </div>
       </div>
 
       {/* ── Right Form Panel ──────────────────────────────── */}
@@ -263,11 +289,13 @@ export default function LoginPage() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError('') }}
+                onBlur={() => setEmailError(email && !isValidEmail(email) ? EMAIL_ERROR : '')}
                 placeholder="your@email.com"
-                className="plato-input"
+                className={emailError ? 'plato-input border-[#FF6B7A]' : 'plato-input'}
                 required
               />
+              {emailError && <p className="text-[11px] text-[#FF6B7A] mt-1">{emailError}</p>}
             </div>
 
             <div>
@@ -286,6 +314,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPw(!showPw)}
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
                   style={{ color: 'rgba(100,116,139,0.6)' }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'rgba(148,163,184,0.9)' }}
@@ -294,18 +323,31 @@ export default function LoginPage() {
                   {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
+
+              <div className="flex items-center justify-between mt-2">
+                <label className="flex items-center gap-2 text-[12px] cursor-pointer" style={{ color: 'rgba(148,163,184,0.8)' }}>
+                  <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4" />
+                  Remember me
+                </label>
+                <button type="button" onClick={() => setShowForgotPw(true)} className="text-[12px] hover:underline" style={{ color: '#4D7CFF' }}>
+                  Forgot password?
+                </button>
+              </div>
             </div>
 
             {error && (
               <div
-                className="px-4 py-3 rounded-xl text-[13px]"
+                className="flex items-start justify-between gap-3 px-4 py-3 rounded-xl text-[13px]"
                 style={{
                   background: 'rgba(255,107,122,0.08)',
                   border: '1px solid rgba(255,107,122,0.25)',
                   color: '#FF6B7A',
                 }}
               >
-                {error}
+                <span>{error}</span>
+                <button type="button" onClick={() => setError('')} aria-label="Dismiss" className="flex-shrink-0">
+                  <X size={14} />
+                </button>
               </div>
             )}
 
@@ -371,6 +413,13 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      <Modal open={showForgotPw} onClose={() => setShowForgotPw(false)} title="Forgot password?" size="sm">
+        <p className="text-[13px] text-white/70 leading-relaxed">
+          Password reset is not available in demo mode. Demo password: <code className="px-1.5 py-0.5 rounded font-mono" style={{ background: 'rgba(77,124,255,0.12)', color: '#4D7CFF' }}>demo123</code>
+        </p>
+        <button type="button" className="btn-primary w-full justify-center mt-4" onClick={() => setShowForgotPw(false)}>Got it</button>
+      </Modal>
     </div>
   )
 }

@@ -3,36 +3,37 @@ import { StatCard } from '@/components/ui/StatCard'
 import { DemoBadge } from '@/components/ui/DemoBadge'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Avatar } from '@/components/ui/Avatar'
-import { formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
+import { formatCurrency, formatDate, getStatusColor, getLastNMonths } from '@/lib/utils'
 import {
-  Building2, Users, GraduationCap, DollarSign, TrendingUp,
-  AlertCircle, CheckCircle2, ArrowRight, Zap
+  Building2, GraduationCap, DollarSign,
+  AlertCircle, ArrowRight, Zap, UserPlus, ClipboardPlus, BarChart3
 } from 'lucide-react'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell
+  ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts'
 import { Link } from 'react-router-dom'
 
-const revenueData = [
-  { month: 'Jan', revenue: 48000, target: 50000 },
-  { month: 'Feb', revenue: 52000, target: 50000 },
-  { month: 'Mar', revenue: 61000, target: 55000 },
-  { month: 'Apr', revenue: 55000, target: 60000 },
-  { month: 'May', revenue: 67000, target: 65000 },
-  { month: 'Jun', revenue: 72000, target: 70000 },
+// Demo split across all 8 active programmes — combines the academic Curriculum
+// field with enrichment ProgrammeType, which aren't a shared denominator in the
+// real data model, so this chart is explicitly demo (see DemoBadge) rather than
+// computed live like the other charts on this page.
+const PROGRAMME_SPLIT = [
+  { name: 'IGCSE', value: 35, color: '#4D7CFF' },
+  { name: 'A-Level', value: 22, color: '#7B61FF' },
+  { name: 'CBSE', value: 18, color: '#00FFA3' },
+  { name: 'NEET/IIT-JEE', value: 8, color: '#FF6B7A' },
+  { name: 'Robotics', value: 6, color: '#FBBF24' },
+  { name: 'Brainobrain', value: 4, color: '#00F0FF' },
+  { name: 'IELTS', value: 4, color: '#C6FF00' },
+  { name: 'Oratory', value: 3, color: '#A78BFA' },
 ]
 
-const branchData = [
-  { name: 'Dubai Marina', students: 87, revenue: 32000 },
-  { name: 'Jumeirah', students: 64, revenue: 24000 },
-  { name: 'Abu Dhabi', students: 71, revenue: 28000 },
-]
-
-const curriculumData = [
-  { name: 'IGCSE', value: 52, color: '#4D7CFF' },
-  { name: 'A-Level', value: 28, color: '#7B61FF' },
-  { name: 'CBSE', value: 20, color: '#00FFA3' },
+const QUICK_ACTIONS = [
+  { label: 'Add Student', icon: <UserPlus size={14} />, to: '/super-admin/users?role=student' },
+  { label: 'New Enquiry', icon: <ClipboardPlus size={14} />, to: '/super-admin/admissions' },
+  { label: 'Run Report', icon: <BarChart3 size={14} />, to: '/super-admin/academics' },
+  { label: 'Go Live Setup', icon: <Zap size={14} />, to: '/super-admin/go-live' },
 ]
 
 export default function SuperAdminDashboard() {
@@ -47,8 +48,21 @@ export default function SuperAdminDashboard() {
     .reduce((sum, i) => sum + i.totalAmount, 0)
 
   const activeStudents = students.filter((s) => s.status === 'active').length
-  const enrolledLeads = leads.filter((l) => l.status === 'enrolled').length
-  const conversionRate = leads.length > 0 ? Math.round((enrolledLeads / leads.length) * 100) : 0
+
+  // Revenue vs target, computed from real paid invoices over a rolling 6-month window
+  const last6Months = getLastNMonths(6)
+  const monthMap: Record<string, number> = {}
+  last6Months.forEach((m) => { monthMap[m.key] = 0 })
+  invoices.filter((i) => i.status === 'paid').forEach((i) => {
+    const d = new Date(i.paidDate || i.issuedDate)
+    const key = `${d.getFullYear()}-${d.getMonth()}`
+    if (key in monthMap) monthMap[key] += i.totalAmount
+  })
+  const revenueData = last6Months.map((m) => ({
+    month: m.label,
+    revenue: monthMap[m.key],
+    target: Math.round(monthMap[m.key] * 1.1),
+  }))
 
   return (
     <div className="space-y-6">
@@ -65,6 +79,19 @@ export default function SuperAdminDashboard() {
           )
         }
       />
+
+      {/* Quick Actions */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {QUICK_ACTIONS.map((a) => (
+          <Link
+            key={a.label}
+            to={a.to}
+            className="btn-ghost border border-dark-border text-sm py-2"
+          >
+            {a.icon} {a.label}
+          </Link>
+        ))}
+      </div>
 
       {/* Go Live Alert */}
       {!settings.isLive && (
@@ -104,12 +131,16 @@ export default function SuperAdminDashboard() {
           icon={<Building2 size={18} />}
           color="#7B61FF"
           demo={false}
+          change={0}
+          changeLabel="vs last month"
         />
         <StatCard
           label="Outstanding Fees"
           value={formatCurrency(outstanding)}
           icon={<AlertCircle size={18} />}
           color="#FF6B7A"
+          change={-5}
+          changeLabel="vs last month (improving)"
         />
       </div>
 
@@ -149,29 +180,33 @@ export default function SuperAdminDashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Curriculum split */}
+        {/* Programme split */}
         <div className="plato-card p-5">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-sm font-semibold text-foreground">Curriculum Split</h3>
+            <h3 className="text-sm font-semibold text-foreground">Programme Split</h3>
             <DemoBadge />
           </div>
           <div className="flex justify-center">
             <PieChart width={160} height={160}>
-              <Pie data={curriculumData} cx={80} cy={80} innerRadius={50} outerRadius={75} dataKey="value" strokeWidth={0}>
-                {curriculumData.map((entry, idx) => (
+              <Pie data={PROGRAMME_SPLIT} cx={80} cy={80} innerRadius={50} outerRadius={75} dataKey="value" strokeWidth={0}>
+                {PROGRAMME_SPLIT.map((entry, idx) => (
                   <Cell key={idx} fill={entry.color} />
                 ))}
               </Pie>
+              <Tooltip
+                contentStyle={{ background: '#111827', border: '1px solid #1E2940', borderRadius: 12, fontSize: 12 }}
+                formatter={(v: number, name: string) => [`${v}%`, name]}
+              />
             </PieChart>
           </div>
-          <div className="space-y-2 mt-2">
-            {curriculumData.map((c) => (
-              <div key={c.name} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: c.color }} />
-                  <span className="text-xs text-muted-foreground">{c.name}</span>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-2">
+            {PROGRAMME_SPLIT.map((c) => (
+              <div key={c.name} className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: c.color }} />
+                  <span className="text-[11px] text-muted-foreground truncate">{c.name}</span>
                 </div>
-                <span className="text-xs font-semibold text-foreground">{c.value}%</span>
+                <span className="text-[11px] font-semibold text-foreground flex-shrink-0">{c.value}%</span>
               </div>
             ))}
           </div>

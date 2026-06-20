@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { DemoBadge } from '@/components/ui/DemoBadge'
-import { formatDate, formatCurrency } from '@/lib/utils'
-import { AlertCircle, Clock, CheckCircle2, X, DollarSign } from 'lucide-react'
+import { formatDate, formatCurrency, generateId } from '@/lib/utils'
+import { AlertCircle, Clock, CheckCircle2, X, DollarSign, Send } from 'lucide-react'
 import { toast } from '@/components/ui/Toaster'
 import type { Invoice } from '@/types'
 
 export default function OutstandingFeesPage() {
-  const { invoices, students, updateInvoice } = useAppStore()
+  const { invoices, students, parents, currentUser, updateInvoice, addMessage } = useAppStore()
   const [markingPaid, setMarkingPaid] = useState<Invoice | null>(null)
   const [method, setMethod] = useState<'cash' | 'card' | 'bank_transfer'>('cash')
 
@@ -42,12 +42,40 @@ export default function OutstandingFeesPage() {
     setMarkingPaid(null)
   }
 
+  const overdueInvoices = outstanding.filter((i) => i.status === 'overdue')
+
+  const handleSendReminders = () => {
+    if (!currentUser) return
+    let sent = 0
+    overdueInvoices.forEach((inv) => {
+      const parent = parents.find((p) => p.id === inv.parentId)
+      if (!parent?.userId) return
+      addMessage({
+        id: `msg-${generateId()}`,
+        fromId: currentUser.id,
+        toId: parent.userId,
+        subject: `Invoice ${inv.invoiceNumber} — Payment Reminder`,
+        body: `Dear ${parent.name}, invoice ${inv.invoiceNumber} for ${formatCurrency(inv.totalAmount, inv.currency)} is now ${daysOverdue(inv.dueDate)} days overdue. Please settle at your earliest convenience.`,
+        isRead: false,
+        sentAt: new Date().toISOString(),
+        type: 'alert',
+      })
+      sent++
+    })
+    toast.success('Reminders sent', `${sent} overdue payment reminder${sent === 1 ? '' : 's'} sent to parents.`)
+  }
+
   return (
     <div className="space-y-5">
       <PageHeader
         title="Outstanding Fees"
         subtitle="Pending and overdue invoices"
         badge={<DemoBadge />}
+        actions={
+          <button className="btn-primary" disabled={overdueInvoices.length === 0} onClick={handleSendReminders}>
+            <Send size={14} /> Send Reminders to All Overdue ({overdueInvoices.length})
+          </button>
+        }
       />
 
       {/* Stats */}

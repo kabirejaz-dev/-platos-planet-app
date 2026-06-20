@@ -4,10 +4,51 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
 import { DemoBadge } from '@/components/ui/DemoBadge'
+import { FieldError, fieldInputClass } from '@/components/ui/FormField'
 import { generateId, formatDate, getStatusColor } from '@/lib/utils'
-import { Plus, Search, Phone, Mail, ChevronRight, LayoutGrid, List, GraduationCap, Calendar } from 'lucide-react'
+import { leadSchema, getFieldErrors } from '@/lib/schemas'
+import { Plus, Search, Phone, Mail, ChevronRight, LayoutGrid, List, Calendar, CalendarPlus } from 'lucide-react'
 import type { LeadStatus, Curriculum, Subject, Lead } from '@/types'
 import { toast } from '@/components/ui/Toaster'
+
+// Lead priority score — urgency (follow-up/trial timing or how fresh an
+// uncontacted lead is), source quality, and programme demand (multi-subject
+// requests). Bucketed into Hot (>=7) / Warm (4-6) / Cool (<=3).
+function getLeadScore(lead: Lead): number {
+  let score = 0
+  if (lead.followUpDate) {
+    const days = Math.ceil((new Date(lead.followUpDate).getTime() - Date.now()) / 86400000)
+    if (days <= 2) score += 4
+    else if (days <= 5) score += 1
+  } else if (lead.status === 'new') {
+    const ageDays = Math.ceil((Date.now() - new Date(lead.createdAt).getTime()) / 86400000)
+    if (ageDays <= 1) score += 3
+    else if (ageDays <= 3) score += 1
+  }
+  const sourceScore: Record<Lead['source'], number> = { referral: 3, google_ads: 3, whatsapp: 2, social_media: 1, walk_in: 1, website: 1 }
+  score += sourceScore[lead.source] ?? 0
+  if (lead.subjects.length >= 3) score += 1
+  if (lead.trialDate) {
+    const tDays = Math.ceil((new Date(lead.trialDate).getTime() - Date.now()) / 86400000)
+    if (tDays >= 0 && tDays <= 1) score += 2
+  }
+  return score
+}
+
+const PRIORITY_CONFIG = {
+  hot:  { color: '#FF6B7A', label: 'Hot — follow up today' },
+  warm: { color: '#FBBF24', label: 'Warm — follow up this week' },
+  cool: { color: '#94A3B8', label: 'Cool — nurture' },
+} as const
+
+function getLeadPriority(lead: Lead): keyof typeof PRIORITY_CONFIG {
+  const score = getLeadScore(lead)
+  if (score >= 7) return 'hot'
+  if (score >= 4) return 'warm'
+  return 'cool'
+}
+
+const TIME_SLOTS = ['09:00', '11:00', '14:00', '16:00']
 
 const SUBJECTS: Subject[] = ['Physics', 'Chemistry', 'Biology', 'Mathematics', 'English', 'Business Studies', 'Accounting', 'Computer Science']
 const CURRICULUMS: Curriculum[] = ['IGCSE', 'A-Level', 'CBSE']
@@ -27,8 +68,11 @@ const STAGE_CONFIG: Record<LeadStatus, { label: string; color: string; bg: strin
   lost:             { label: 'Lost',             color: '#FF6B7A', bg: 'rgba(255,107,122,0.08)' },
 }
 
-function KanbanCard({ lead, onClick, onMove }: { lead: Lead; onClick: () => void; onMove: (status: LeadStatus) => void }) {
+function KanbanCard({ lead, onClick, onScheduleTrial }: { lead: Lead; onClick: () => void; onScheduleTrial: () => void }) {
   const cfg = STAGE_CONFIG[lead.status]
+  const priority = getLeadPriority(lead)
+  const pc = PRIORITY_CONFIG[priority]
+  const canScheduleTrial = ['contacted', 'trial_scheduled', 'trial_done'].includes(lead.status)
   return (
     <div
       onClick={onClick}
@@ -39,32 +83,48 @@ function KanbanCard({ lead, onClick, onMove }: { lead: Lead; onClick: () => void
     >
       <div className="flex items-center gap-2 mb-2">
         <Avatar name={lead.studentName} size="xs" />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-[12px] font-bold text-white/85 truncate">{lead.studentName}</p>
           <p className="text-[10px] text-white/35 truncate">{lead.parentName}</p>
         </div>
+        <div
+          className="w-2 h-2 rounded-full flex-shrink-0"
+          title={pc.label}
+          style={{ background: pc.color, boxShadow: `0 0 5px ${pc.color}` }}
+        />
       </div>
       <div className="flex flex-wrap gap-1 mb-2">
         <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{ background: 'rgba(77,124,255,0.15)', color: '#4D7CFF' }}>{lead.curriculum}</span>
         <span className="px-1.5 py-0.5 rounded text-[10px] text-white/40">{lead.grade}</span>
       </div>
       {lead.followUpDate && (
-        <div className="flex items-center gap-1 text-[10px] text-white/30">
+        <div className="flex items-center gap-1 text-[10px] text-white/30 mb-2">
           <Calendar size={10} />
           {formatDate(lead.followUpDate)}
         </div>
+      )}
+      {canScheduleTrial && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onScheduleTrial() }}
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors"
+          style={{ background: 'rgba(198,255,0,0.1)', color: '#C6FF00' }}
+        >
+          <CalendarPlus size={12} /> Schedule Trial →
+        </button>
       )}
     </div>
   )
 }
 
 export default function LeadsPage() {
-  const { leads, branches, currentUser, addLead, updateLead, addStudent, addUser, addNotification } = useAppStore()
+  const { leads, branches, teachers, currentUser, addLead, updateLead, addStudent, addUser, addNotification } = useAppStore()
   const [showModal, setShowModal] = useState(false)
   const [selectedLead, setSelectedLead] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'list' | 'board'>('board')
+  const [trialLeadId, setTrialLeadId] = useState<string | null>(null)
+  const [trialForm, setTrialForm] = useState({ branchId: '', date: '', timeSlot: TIME_SLOTS[0], teacherId: '' })
   const [form, setForm] = useState({
     parentName: '', parentEmail: '', parentPhone: '',
     studentName: '', studentAge: '', grade: '',
@@ -74,6 +134,7 @@ export default function LeadsPage() {
     branchId: branches[0]?.id || '',
     notes: '',
   })
+  const [errors, setErrors] = useState<Partial<Record<'studentName' | 'studentAge' | 'parentName' | 'parentEmail' | 'parentPhone', string>>>({})
 
   const filtered = leads.filter((l) => {
     const matchSearch = l.studentName.toLowerCase().includes(search.toLowerCase()) || l.parentName.toLowerCase().includes(search.toLowerCase())
@@ -82,6 +143,8 @@ export default function LeadsPage() {
   })
 
   const handleCreate = () => {
+    const fieldErrors = getFieldErrors(leadSchema, form)
+    if (Object.keys(fieldErrors).length > 0) { setErrors(fieldErrors); return }
     addLead({
       id: `ld-${generateId()}`,
       parentName: form.parentName,
@@ -100,6 +163,7 @@ export default function LeadsPage() {
       createdAt: new Date().toISOString(),
     })
     setShowModal(false)
+    setErrors({})
   }
 
   const handleEnroll = (leadId: string) => {
@@ -123,6 +187,31 @@ export default function LeadsPage() {
   }
 
   const detail = leads.find((l) => l.id === selectedLead)
+  const trialLead = leads.find((l) => l.id === trialLeadId)
+  const activeBranches = branches.filter((b) => b.isActive)
+  const matchingTeachers = trialLead ? teachers.filter((t) => t.curriculums.includes(trialLead.curriculum)) : []
+
+  const openTrialModal = (lead: Lead) => {
+    setTrialLeadId(lead.id)
+    setTrialForm({
+      branchId: lead.branchId || activeBranches[0]?.id || '',
+      date: '',
+      timeSlot: TIME_SLOTS[0],
+      teacherId: teachers.find((t) => t.curriculums.includes(lead.curriculum))?.id || '',
+    })
+  }
+
+  const handleScheduleTrial = () => {
+    if (!trialLead || !trialForm.date) return
+    updateLead(trialLead.id, {
+      status: 'trial_scheduled',
+      branchId: trialForm.branchId,
+      trialDate: trialForm.date,
+      trialTimeSlot: trialForm.timeSlot,
+    })
+    toast.success('Trial class scheduled', `${formatDate(trialForm.date)} at ${trialForm.timeSlot}`)
+    setTrialLeadId(null)
+  }
 
   return (
     <div className="space-y-5">
@@ -238,7 +327,7 @@ export default function LeadsPage() {
                         key={lead.id}
                         lead={lead}
                         onClick={() => setSelectedLead(lead.id)}
-                        onMove={(newStatus) => updateLead(lead.id, { status: newStatus })}
+                        onScheduleTrial={() => openTrialModal(lead)}
                       />
                     ))}
                     {colLeads.length === 0 && (
@@ -303,7 +392,7 @@ export default function LeadsPage() {
         </>
       )}
 
-      <Modal open={showModal} onClose={() => setShowModal(false)} title="Add New Lead" size="lg">
+      <Modal open={showModal} onClose={() => { setShowModal(false); setErrors({}) }} title="Add New Lead" size="lg">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
             { label: 'Student Name', key: 'studentName', placeholder: 'Full name' },
@@ -315,7 +404,14 @@ export default function LeadsPage() {
           ].map((f) => (
             <div key={f.key}>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">{f.label}</label>
-              <input type={f.type || 'text'} className="plato-input" placeholder={f.placeholder} value={form[f.key as keyof typeof form] as string} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} />
+              <input
+                type={f.type || 'text'}
+                className={fieldInputClass(errors[f.key as keyof typeof errors])}
+                placeholder={f.placeholder}
+                value={form[f.key as keyof typeof form] as string}
+                onChange={(e) => { setForm({ ...form, [f.key]: e.target.value }); if (errors[f.key as keyof typeof errors]) setErrors({ ...errors, [f.key]: undefined }) }}
+              />
+              <FieldError message={errors[f.key as keyof typeof errors]} />
             </div>
           ))}
 
@@ -356,9 +452,54 @@ export default function LeadsPage() {
         </div>
 
         <div className="flex gap-3 mt-4">
-          <button className="btn-ghost flex-1 justify-center border border-dark-border" onClick={() => setShowModal(false)}>Cancel</button>
+          <button className="btn-ghost flex-1 justify-center border border-dark-border" onClick={() => { setShowModal(false); setErrors({}) }}>Cancel</button>
           <button className="btn-primary flex-1 justify-center" onClick={handleCreate} disabled={!form.studentName || !form.parentPhone}>Add Lead</button>
         </div>
+      </Modal>
+
+      {/* Schedule Trial Class modal */}
+      <Modal open={!!trialLead} onClose={() => setTrialLeadId(null)} title="Schedule Trial Class" size="sm">
+        {trialLead && (
+          <div className="space-y-4">
+            <div className="p-3 rounded-xl" style={{ background: 'rgba(77,124,255,0.06)' }}>
+              <p className="text-[13px] font-semibold text-white/85">{trialLead.studentName}</p>
+              <p className="text-[11px] text-white/40">{trialLead.curriculum} · {trialLead.grade}</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Branch</label>
+              <select className="plato-input" value={trialForm.branchId} onChange={(e) => setTrialForm((f) => ({ ...f, branchId: e.target.value }))}>
+                {activeBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Date</label>
+                <input type="date" className="plato-input" value={trialForm.date} min={new Date().toISOString().split('T')[0]} onChange={(e) => setTrialForm((f) => ({ ...f, date: e.target.value }))} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Time Slot</label>
+                <select className="plato-input" value={trialForm.timeSlot} onChange={(e) => setTrialForm((f) => ({ ...f, timeSlot: e.target.value }))}>
+                  {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Teacher</label>
+              <select className="plato-input" value={trialForm.teacherId} onChange={(e) => setTrialForm((f) => ({ ...f, teacherId: e.target.value }))}>
+                <option value="">Select teacher…</option>
+                {matchingTeachers.map((t) => <option key={t.id} value={t.id}>{t.name} — {t.subjects.join(', ')}</option>)}
+              </select>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button className="btn-ghost flex-1 justify-center border border-dark-border" onClick={() => setTrialLeadId(null)}>Cancel</button>
+              <button className="btn-primary flex-1 justify-center" onClick={handleScheduleTrial} disabled={!trialForm.date}>Schedule Trial</button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )
