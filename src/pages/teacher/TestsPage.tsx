@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
 import { FieldError, fieldInputClass } from '@/components/ui/FormField'
@@ -73,6 +74,7 @@ export default function TestsPage() {
       <PageHeader
         title="Tests & Assessments"
         subtitle={`${myAssessments.length} assessments · ${myAssessments.filter((a) => a.status === 'upcoming').length} upcoming`}
+        badge={<DemoBadge />}
         actions={
           <button className="btn-primary" onClick={() => setShowModal(true)}>
             <Plus size={16} /> Create Assessment

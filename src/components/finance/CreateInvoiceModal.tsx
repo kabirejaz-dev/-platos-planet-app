@@ -6,7 +6,7 @@ import { RequiredMark, RequiredFieldsNote, FieldError } from '@/components/ui/Fo
 import { formatCurrency, generateId, formatDate } from '@/lib/utils'
 import { formatAedOnBlur, parseAedOnFocus, aedNumber, formatDateUAE } from '@/lib/validation'
 import { toast } from '@/components/ui/Toaster'
-import { ShieldCheck, FileText } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import type { Curriculum, PaymentInstallment } from '@/types'
 
 const CURRICULA: Curriculum[] = ['IGCSE', 'A-Level', 'CBSE', 'IB', 'American']
@@ -26,7 +26,7 @@ interface CreateInvoiceModalProps {
 }
 
 export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
-  const { students, branches, parents, invoices, addInvoice, addPaymentPlan } = useAppStore()
+  const { students, branches, parents, invoices, settings, addInvoice, addPaymentPlan } = useAppStore()
 
   const [studentId, setStudentId] = useState('')
   const [branchOverride, setBranchOverride] = useState('')
@@ -133,9 +133,8 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4D7CFF 0%, #7B61FF 100%)' }}>
                   <span className="text-white font-bold font-display">P</span>
                 </div>
-                <p className="text-sm font-bold text-foreground font-display">Plato's Planet Digital</p>
+                <p className="text-sm font-bold text-foreground font-display">{settings.companyName}</p>
               </div>
-              <span className="badge-success flex items-center gap-1"><ShieldCheck size={12} /> KHDA & SPEA Accredited</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-sm">

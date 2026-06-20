@@ -13,12 +13,15 @@ import { RecordPaymentModal } from '@/components/finance/RecordPaymentModal'
 import { InvoiceDetailModal } from '@/components/finance/InvoiceDetailModal'
 
 export default function FinanceDashboard() {
-  const { invoices, students, settings } = useAppStore()
+  const { invoices, students, branches, settings } = useAppStore()
   const [showCreateInvoice, setShowCreateInvoice] = useState(false)
   const [recordPaymentFor, setRecordPaymentFor] = useState<string | null>(null)
   const [viewInvoiceFor, setViewInvoiceFor] = useState<string | null>(null)
+  const [summaryTab, setSummaryTab] = useState<'branch' | 'programme'>('branch')
 
-  const totalCollected = invoices.reduce((s, i) => s + (i.status === 'paid' ? i.totalAmount : i.paidAmount || 0), 0)
+  const collectedAmount = (i: typeof invoices[number]) => (i.status === 'paid' ? i.totalAmount : i.paidAmount || 0)
+
+  const totalCollected = invoices.reduce((s, i) => s + collectedAmount(i), 0)
   const totalOutstanding = invoices.reduce((s, i) => {
     if (i.status === 'pending' || i.status === 'overdue') return s + i.totalAmount
     if (i.status === 'partial') return s + (i.totalAmount - (i.paidAmount || 0))
@@ -27,18 +30,55 @@ export default function FinanceDashboard() {
   const overdueCount = invoices.filter((i) => i.status === 'overdue').length
   const collectionRate = invoices.length > 0 ? Math.round((invoices.filter((i) => i.status === 'paid').length / invoices.length) * 100) : 0
 
-  // Monthly collections, computed from real invoices over a rolling 6-month window
+  // Monthly collections, computed from real invoices over a rolling 6-month window.
+  // Collected is bucketed by the actual payment date (itemized payment history where it
+  // exists; legacy fully-paid invoices with no history fall back to a single paidDate entry).
+  // Outstanding is the remaining unpaid balance, bucketed by the invoice's due month.
   const last6Months = getLastNMonths(6)
   const monthMap: Record<string, { collected: number; outstanding: number }> = {}
   last6Months.forEach((m) => { monthMap[m.key] = { collected: 0, outstanding: 0 } })
-  invoices.forEach((i) => {
-    const d = new Date(i.status === 'paid' ? (i.paidDate || i.issuedDate) : i.issuedDate)
-    const key = `${d.getFullYear()}-${d.getMonth()}`
-    if (!(key in monthMap)) return
-    if (i.status === 'paid') monthMap[key].collected += i.totalAmount
-    else monthMap[key].outstanding += i.totalAmount
+  invoices.forEach((inv) => {
+    const payments = inv.paymentHistory && inv.paymentHistory.length > 0
+      ? inv.paymentHistory
+      : (inv.status === 'paid' && inv.paidDate ? [{ date: inv.paidDate, amount: inv.totalAmount }] : [])
+    payments.forEach((pmt) => {
+      const d = new Date(pmt.date)
+      const key = `${d.getFullYear()}-${d.getMonth()}`
+      if (key in monthMap) monthMap[key].collected += pmt.amount
+    })
+
+    const remaining = inv.status === 'paid' ? 0 : inv.totalAmount - (inv.paidAmount || 0)
+    if (remaining > 0) {
+      const d = new Date(inv.dueDate)
+      const key = `${d.getFullYear()}-${d.getMonth()}`
+      if (key in monthMap) monthMap[key].outstanding += remaining
+    }
   })
   const monthlyData = last6Months.map((m) => ({ month: m.label, ...monthMap[m.key] }))
+  const highestMonth = monthlyData.reduce((max, m) => (m.collected > max.collected ? m : max), monthlyData[0])
+  const currentMonth = monthlyData[monthlyData.length - 1]
+  const currentMonthDue = currentMonth ? currentMonth.collected + currentMonth.outstanding : 0
+  const currentMonthRate = currentMonthDue > 0 ? Math.round((currentMonth.collected / currentMonthDue) * 100) : 0
+
+  const branchSummary = branches
+    .map((b) => {
+      const bInvoices = invoices.filter((i) => i.branchId === b.id)
+      const invoiced = bInvoices.reduce((s, i) => s + i.totalAmount, 0)
+      const collected = bInvoices.reduce((s, i) => s + collectedAmount(i), 0)
+      return { key: b.id, label: b.name, invoiced, collected, outstanding: invoiced - collected, rate: invoiced > 0 ? Math.round((collected / invoiced) * 100) : 0 }
+    })
+    .filter((r) => r.invoiced > 0)
+
+  const programmeSummary = Array.from(new Set(students.map((s) => s.curriculum)))
+    .map((curriculum) => {
+      const studentIds = new Set(students.filter((s) => s.curriculum === curriculum).map((s) => s.id))
+      const pInvoices = invoices.filter((i) => studentIds.has(i.studentId))
+      const invoiced = pInvoices.reduce((s, i) => s + i.totalAmount, 0)
+      const collected = pInvoices.reduce((s, i) => s + collectedAmount(i), 0)
+      const billedStudents = new Set(pInvoices.map((i) => i.studentId)).size
+      return { key: curriculum, label: curriculum, students: billedStudents, invoiced, collected, outstanding: invoiced - collected }
+    })
+    .filter((r) => r.invoiced > 0)
 
   return (
     <div className="space-y-6">
@@ -94,6 +134,67 @@ export default function FinanceDashboard() {
             <Bar dataKey="outstanding" fill="#FF6B7A" radius={[4, 4, 0, 0]} name="Outstanding" />
           </BarChart>
         </ResponsiveContainer>
+        {highestMonth && (
+          <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-xs text-muted-foreground">
+            <p>Highest collection month: <span className="text-foreground font-semibold">{highestMonth.month}</span> — {formatCurrency(highestMonth.collected, settings.currency)}</p>
+            <p>Current month collection rate: <span className="text-foreground font-semibold">{currentMonthRate}%</span></p>
+          </div>
+        )}
+      </div>
+
+      {/* By Branch / By Programme */}
+      <div className="plato-card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-foreground">Collection Summary</h3>
+          <div className="flex gap-1 p-1 bg-white/5 border border-dark-border rounded-xl w-fit">
+            {(['branch', 'programme'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setSummaryTab(t)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${summaryTab === t ? 'bg-[#4D7CFF] text-white' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                {t === 'branch' ? 'By Branch' : 'By Programme'}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full plato-table">
+            {summaryTab === 'branch' ? (
+              <>
+                <thead><tr><th>Branch</th><th>Invoiced (AED)</th><th>Collected (AED)</th><th>Outstanding (AED)</th><th>Rate %</th></tr></thead>
+                <tbody>
+                  {branchSummary.map((r) => (
+                    <tr key={r.key}>
+                      <td className="text-sm font-medium text-foreground">{r.label}</td>
+                      <td className="text-sm text-foreground">{formatCurrency(r.invoiced, settings.currency)}</td>
+                      <td className="text-sm text-[#00FFA3]">{formatCurrency(r.collected, settings.currency)}</td>
+                      <td className="text-sm text-[#FF6B7A]">{formatCurrency(r.outstanding, settings.currency)}</td>
+                      <td className="text-sm text-foreground">{r.rate}%</td>
+                    </tr>
+                  ))}
+                  {branchSummary.length === 0 && <tr><td colSpan={5} className="text-center py-8 text-muted-foreground text-sm">No invoiced branches yet.</td></tr>}
+                </tbody>
+              </>
+            ) : (
+              <>
+                <thead><tr><th>Programme</th><th>Students</th><th>Invoiced (AED)</th><th>Collected (AED)</th><th>Outstanding (AED)</th></tr></thead>
+                <tbody>
+                  {programmeSummary.map((r) => (
+                    <tr key={r.key}>
+                      <td className="text-sm font-medium text-foreground">{r.label}</td>
+                      <td className="text-sm text-muted-foreground">{r.students}</td>
+                      <td className="text-sm text-foreground">{formatCurrency(r.invoiced, settings.currency)}</td>
+                      <td className="text-sm text-[#00FFA3]">{formatCurrency(r.collected, settings.currency)}</td>
+                      <td className="text-sm text-[#FF6B7A]">{formatCurrency(r.outstanding, settings.currency)}</td>
+                    </tr>
+                  ))}
+                  {programmeSummary.length === 0 && <tr><td colSpan={5} className="text-center py-8 text-muted-foreground text-sm">No invoiced programmes yet.</td></tr>}
+                </tbody>
+              </>
+            )}
+          </table>
+        </div>
       </div>
 
       {/* Invoices table */}

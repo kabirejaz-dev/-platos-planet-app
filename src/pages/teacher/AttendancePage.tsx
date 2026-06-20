@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { toast } from '@/components/ui/Toaster'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { generateId } from '@/lib/utils'
 import type { AttendanceStatus } from '@/types'
@@ -82,6 +83,7 @@ export default function AttendancePage() {
       <PageHeader
         title="Mark Attendance"
         subtitle="Record student attendance for your classes"
+        badge={<DemoBadge />}
         actions={
           <button className="btn-primary" onClick={handleSave} disabled={!batch}>
             <Save size={16} />

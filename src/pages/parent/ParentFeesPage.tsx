@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { DemoBadge } from '@/components/ui/DemoBadge'
+import { Modal } from '@/components/ui/Modal'
 import { formatDate, formatCurrency } from '@/lib/utils'
-import { X, Receipt, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
+import { X, Receipt, CheckCircle2, Clock, AlertCircle, Wallet, Building2, Phone } from 'lucide-react'
 import type { Invoice } from '@/types'
 
 const STATUS_CONFIG: Record<Invoice['status'], { icon: JSX.Element; color: string; bg: string; label: string }> = {
@@ -14,14 +15,21 @@ const STATUS_CONFIG: Record<Invoice['status'], { icon: JSX.Element; color: strin
   partial: { icon: <Clock size={13} />,         color: '#4D7CFF', bg: 'rgba(77,124,255,0.1)',  label: 'Partial' },
 }
 
+const notSet = (v?: string) => (v && v.trim() ? v : 'Not configured yet')
+
 export default function ParentFeesPage() {
-  const { currentUser, parents, invoices, students } = useAppStore()
+  const { currentUser, parents, invoices, students, branches, settings } = useAppStore()
   const [selected, setSelected] = useState<Invoice | null>(null)
+  const [showPayNow, setShowPayNow] = useState(false)
+  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [checked, setChecked] = useState<Set<string>>(new Set())
 
   const parent = parents.find((p) => p.userId === currentUser?.id)
   const myInvoices = invoices
     .filter((inv) => inv.parentId === parent?.id)
     .sort((a, b) => new Date(b.issuedDate).getTime() - new Date(a.issuedDate).getTime())
+
+  const payableInvoices = myInvoices.filter((i) => i.status === 'pending' || i.status === 'overdue' || i.status === 'partial')
 
   const total = myInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0)
   const paid = myInvoices.filter((i) => i.status === 'paid').reduce((sum, i) => sum + i.totalAmount, 0)
@@ -30,9 +38,37 @@ export default function ParentFeesPage() {
   const currency = myInvoices[0]?.currency ?? 'AED'
   const getStudentName = (id: string) => students.find((s) => s.id === id)?.name ?? 'Unknown'
 
+  const selectedInvoices = payableInvoices.filter((i) => checked.has(i.id))
+  const selectedTotal = selectedInvoices.reduce((s, i) => s + (i.totalAmount - (i.paidAmount || 0)), 0)
+  const reference = selectedInvoices.length > 0
+    ? `${getStudentName(selectedInvoices[0].studentId)} — ${selectedInvoices.map((i) => i.invoiceNumber).join(', ')}`
+    : ''
+  const selectedBranches = Array.from(new Set(selectedInvoices.map((i) => i.branchId))).map((id) => branches.find((b) => b.id === id)).filter(Boolean)
+
+  const toggle = (id: string) => {
+    setChecked((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  const closePayNow = () => { setShowPayNow(false); setStep(1); setChecked(new Set()) }
+
   return (
     <div className="space-y-5">
-      <PageHeader title="Fees" subtitle="Invoice history and payment status" badge={<DemoBadge />} />
+      <PageHeader
+        title="Fees"
+        subtitle="Invoice history and payment status"
+        badge={<DemoBadge />}
+        actions={
+          payableInvoices.length > 0 && (
+            <button className="btn-primary" onClick={() => setShowPayNow(true)}>
+              <Wallet size={14} /> Pay Now
+            </button>
+          )
+        }
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
@@ -172,6 +208,92 @@ export default function ParentFeesPage() {
           </div>
         </>
       )}
+
+      {/* Pay Now flow */}
+      <Modal open={showPayNow} onClose={closePayNow} title={step === 1 ? 'Select Invoices' : step === 2 ? 'Payment Options' : 'Thank You'} size="md">
+        {step === 1 && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              {payableInvoices.map((inv) => {
+                const remaining = inv.totalAmount - (inv.paidAmount || 0)
+                return (
+                  <label key={inv.id} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <input type="checkbox" checked={checked.has(inv.id)} onChange={() => toggle(inv.id)} />
+                    <div className="flex-1">
+                      <p className="text-[13px] font-semibold text-white/80">{inv.invoiceNumber} · {getStudentName(inv.studentId)}</p>
+                      <p className="text-[11px] text-white/35">Due {formatDate(inv.dueDate)}</p>
+                    </div>
+                    <span className="text-[13px] font-bold" style={{ color: STATUS_CONFIG[inv.status].color }}>{formatCurrency(remaining, inv.currency)}</span>
+                  </label>
+                )
+              })}
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-dark-border">
+              <span className="text-[13px] text-white/50">Selected total</span>
+              <span className="text-[16px] font-bold text-foreground">{formatCurrency(selectedTotal, currency)}</span>
+            </div>
+            <button className="btn-primary w-full justify-center min-h-[44px]" disabled={checked.size === 0} onClick={() => setStep(2)}>
+              Continue →
+            </button>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl space-y-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center gap-2 text-[13px] font-semibold text-white/80"><Wallet size={14} /> Option A — Bank Transfer</div>
+              <div className="text-[12px] space-y-1 pl-1">
+                <div className="flex justify-between"><span className="text-white/40">Account Name</span><span className="text-white/80">{notSet(settings.bankAccountName)}</span></div>
+                <div className="flex justify-between"><span className="text-white/40">Bank</span><span className="text-white/80">{notSet(settings.bankName)}</span></div>
+                <div className="flex justify-between"><span className="text-white/40">IBAN</span><span className="text-white/80">{notSet(settings.bankIban)}</span></div>
+                <div className="flex justify-between"><span className="text-white/40">Payment Ref</span><span className="text-[#4D7CFF] font-semibold">{reference}</span></div>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl space-y-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center gap-2 text-[13px] font-semibold text-white/80"><Building2 size={14} /> Option B — Visit a Branch</div>
+              <div className="text-[12px] space-y-1.5 pl-1">
+                {selectedBranches.length > 0 ? selectedBranches.map((b) => (
+                  <div key={b!.id}>
+                    <p className="text-white/80 font-medium">{b!.name}</p>
+                    <p className="text-white/40">{notSet(b!.address)}</p>
+                  </div>
+                )) : <p className="text-white/40">Not configured yet</p>}
+                <div className="flex justify-between pt-1 border-t border-dark-border/50">
+                  <span className="text-white/40">Opening hours</span><span className="text-white/80">{notSet(settings.openingHours)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl space-y-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center gap-2 text-[13px] font-semibold text-white/80"><Phone size={14} /> Option C — Call Us</div>
+              <div className="text-[12px] flex justify-between pl-1">
+                <span className="text-white/40">Phone</span><span className="text-white/80">{notSet(settings.phone)}</span>
+              </div>
+            </div>
+
+            {(!settings.bankAccountName || !settings.bankName || !settings.bankIban) && (
+              <p className="text-[11px] text-[#FBBF24]">Please contact the school directly for payment details until bank details are configured in Setup.</p>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button className="btn-ghost flex-1 justify-center border border-dark-border min-h-[44px]" onClick={() => setStep(1)}>Back</button>
+              <button className="btn-primary flex-1 justify-center min-h-[44px]" onClick={() => setStep(3)}>I've Made the Transfer</button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-4 text-center py-2">
+            <CheckCircle2 size={36} className="mx-auto text-[#00FFA3]" />
+            <p className="text-[14px] text-white/80 leading-relaxed">
+              Thank you. Once we receive your payment, it will be marked in your account within 1 business day.
+              Please use the reference: <span className="font-semibold text-[#4D7CFF]">{reference}</span>.
+            </p>
+            <button className="btn-primary w-full justify-center min-h-[44px]" onClick={closePayNow}>Done</button>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

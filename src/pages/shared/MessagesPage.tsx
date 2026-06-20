@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { DemoBadge } from '@/components/ui/DemoBadge'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
 import { generateId, formatDate, timeAgo } from '@/lib/utils'
@@ -47,6 +48,7 @@ export default function MessagesPage() {
       <PageHeader
         title="Messages"
         subtitle={`${inbox.filter((m) => !m.isRead).length} unread`}
+        badge={<DemoBadge />}
         actions={
           <button className="btn-primary" onClick={() => setShowCompose(true)}>
             <Plus size={16} /> Compose

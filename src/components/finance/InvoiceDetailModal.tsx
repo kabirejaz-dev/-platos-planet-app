@@ -4,7 +4,8 @@ import { Modal } from '@/components/ui/Modal'
 import { formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
 import { formatDateUAE } from '@/lib/validation'
 import { toast } from '@/components/ui/Toaster'
-import { Download, MessageCircle, ShieldCheck, CreditCard, AlertTriangle } from 'lucide-react'
+import { printPaymentReceipt } from '@/lib/receipt'
+import { Download, MessageCircle, CreditCard, AlertTriangle, Printer } from 'lucide-react'
 
 interface InvoiceDetailModalProps {
   open: boolean
@@ -28,7 +29,7 @@ export function InvoiceDetailModal({ open, onClose, invoiceId, onRecordPayment }
   const feeItems = invoice.items.filter((i) => i !== vatItem)
   const isOverdue = invoice.status === 'pending' && invoice.dueDate < new Date().toISOString().split('T')[0]
 
-  const whatsappMessage = `Dear ${parent?.name || 'Parent'}, your invoice ${invoice.invoiceNumber} for ${student.name} (AED ${invoice.totalAmount.toLocaleString()}) is due on ${formatDateUAE(invoice.dueDate)}. Pay now: ${window.location.origin}/finance/invoices. Plato's Planet — +971 4 123 4567`
+  const whatsappMessage = `Dear ${parent?.name || 'Parent'}, your invoice ${invoice.invoiceNumber} for ${student.name} (AED ${invoice.totalAmount.toLocaleString()}) is due on ${formatDateUAE(invoice.dueDate)}. Pay now: ${window.location.origin}/finance/invoices. ${settings.companyName}${settings.phone ? ` — ${settings.phone}` : ''}`
 
   const sendWhatsApp = () => {
     const digits = (parent?.phone || '').replace(/[^\d]/g, '')
@@ -47,8 +48,7 @@ export function InvoiceDetailModal({ open, onClose, invoiceId, onRecordPayment }
         td { padding: 6px 0; } .right { text-align: right; } .total { font-weight: bold; border-top: 1px solid #ccc; }
         .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; background: #eef; font-size: 12px; }
       </style></head><body>
-      <h1>Plato's Planet Digital</h1>
-      <p class="badge">KHDA &amp; SPEA Accredited</p>
+      <h1>${settings.companyName}</h1>
       <p><strong>Invoice ${invoice.invoiceNumber}</strong><br/>Issued ${formatDateUAE(invoice.issuedDate)} · Due ${formatDateUAE(invoice.dueDate)}</p>
       <p>Student: ${student.name}<br/>Branch: ${branch?.name || ''}<br/>Programme: ${student.curriculum}<br/>Grade: ${student.grade}</p>
       <table>
@@ -56,7 +56,7 @@ export function InvoiceDetailModal({ open, onClose, invoiceId, onRecordPayment }
         ${vatItem ? `<tr><td>${vatItem.description}</td><td class="right">${formatCurrency(vatItem.amount)}</td></tr>` : ''}
         <tr class="total"><td>Total</td><td class="right">${formatCurrency(invoice.totalAmount)}</td></tr>
       </table>
-      <p style="margin-top:24px;color:#666;font-size:12px;">${settings.companyName} · +971 4 123 4567 · hello@platosplanet.ae</p>
+      <p style="margin-top:24px;color:#666;font-size:12px;">${settings.companyName}${settings.phone ? ` · ${settings.phone}` : ''}${settings.email ? ` · ${settings.email}` : ''}</p>
       </body></html>
     `)
     win.document.close()
@@ -83,7 +83,6 @@ export function InvoiceDetailModal({ open, onClose, invoiceId, onRecordPayment }
                 <p className="text-xs text-muted-foreground">Issued {formatDateUAE(invoice.issuedDate)} · Due {formatDateUAE(invoice.dueDate)}</p>
               </div>
             </div>
-            <span className="badge-success flex items-center gap-1"><ShieldCheck size={12} /> KHDA & SPEA Accredited</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 text-sm">
@@ -123,12 +122,28 @@ export function InvoiceDetailModal({ open, onClose, invoiceId, onRecordPayment }
             <div>
               <p className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Payment History</p>
               <div className="space-y-1.5">
-                {invoice.paymentHistory.map((p, idx) => (
-                  <div key={idx} className="flex justify-between text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    <span className="text-muted-foreground">{formatDate(p.date)} · {p.method.replace('_', ' ')}{p.reference ? ` · ${p.reference}` : ''}</span>
-                    <span className="text-foreground font-semibold">{formatCurrency(p.amount)}</span>
-                  </div>
-                ))}
+                {invoice.paymentHistory.map((p, idx) => {
+                  const previouslyPaid = invoice.paymentHistory!.slice(0, idx).reduce((s, h) => s + h.amount, 0)
+                  return (
+                    <div key={idx} className="flex justify-between items-center text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                      <span className="text-muted-foreground">{formatDate(p.date)} · {p.method.replace('_', ' ')}{p.reference ? ` · ${p.reference}` : ''}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-foreground font-semibold">{formatCurrency(p.amount)}</span>
+                        <button
+                          className="text-muted-foreground hover:text-foreground"
+                          title="Print receipt"
+                          onClick={() => printPaymentReceipt({
+                            settings, invoice, student, parent, branch,
+                            amountReceived: p.amount, previouslyPaid, paymentMethod: p.method,
+                            reference: p.reference, paymentDate: p.date,
+                          })}
+                        >
+                          <Printer size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}

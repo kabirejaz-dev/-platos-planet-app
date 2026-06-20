@@ -5,6 +5,7 @@ import { FieldError, RequiredMark } from '@/components/ui/FormField'
 import { formatCurrency } from '@/lib/utils'
 import { formatAedOnBlur, parseAedOnFocus, aedNumber } from '@/lib/validation'
 import { toast } from '@/components/ui/Toaster'
+import { printPaymentReceipt } from '@/lib/receipt'
 import type { PaymentRecord } from '@/types'
 
 const METHODS = [
@@ -25,15 +26,16 @@ interface RecordPaymentModalProps {
   open: boolean
   onClose: () => void
   invoiceId: string
+  defaultAmount?: number
 }
 
-export function RecordPaymentModal({ open, onClose, invoiceId }: RecordPaymentModalProps) {
-  const { invoices, students, updateInvoice } = useAppStore()
+export function RecordPaymentModal({ open, onClose, invoiceId, defaultAmount }: RecordPaymentModalProps) {
+  const { invoices, students, parents, branches, settings, updateInvoice } = useAppStore()
   const invoice = invoices.find((i) => i.id === invoiceId)
   const student = students.find((s) => s.id === invoice?.studentId)
 
   const [paymentDate, setPaymentDate] = useState(todayStr())
-  const [amountPaid, setAmountPaid] = useState('')
+  const [amountPaid, setAmountPaid] = useState(defaultAmount ? String(defaultAmount) : '')
   const [method, setMethod] = useState<typeof METHODS[number]['value']>('cash')
   const [reference, setReference] = useState('')
   const [notes, setNotes] = useState('')
@@ -56,7 +58,8 @@ export function RecordPaymentModal({ open, onClose, invoiceId }: RecordPaymentMo
       return
     }
     const record: PaymentRecord = { date: paymentDate, amount: amountNum, method, reference: reference || undefined, notes: notes || undefined }
-    const newPaidAmount = (invoice.paidAmount || 0) + amountNum
+    const previouslyPaid = invoice.paidAmount || 0
+    const newPaidAmount = previouslyPaid + amountNum
     const isFull = newPaidAmount >= invoice.totalAmount
     updateInvoice(invoice.id, {
       status: isFull ? 'paid' : 'partial',
@@ -65,9 +68,19 @@ export function RecordPaymentModal({ open, onClose, invoiceId }: RecordPaymentMo
       paymentMethod: method,
       paymentHistory: [...(invoice.paymentHistory || []), record],
     })
+    const parent = parents.find((p) => p.studentIds.includes(student.id))
+    const branch = branches.find((b) => b.id === invoice.branchId)
     toast.success(
-      `Payment of ${formatCurrency(amountNum)} recorded for ${invoice.invoiceNumber}`,
-      isFull ? undefined : `Remaining balance: ${formatCurrency(invoice.totalAmount - newPaidAmount)}`
+      `Payment of ${formatCurrency(amountNum)} recorded for ${student.name}`,
+      isFull ? undefined : `Remaining balance: ${formatCurrency(invoice.totalAmount - newPaidAmount)}`,
+      {
+        label: 'Print Receipt',
+        onClick: () => printPaymentReceipt({
+          settings, invoice, student, parent, branch,
+          amountReceived: amountNum, previouslyPaid, paymentMethod: method,
+          reference: reference || undefined, paymentDate,
+        }),
+      }
     )
     close()
   }

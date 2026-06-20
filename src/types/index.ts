@@ -640,4 +640,10 @@ export interface SystemSettings {
   primaryColor?: string;
   currentTerm?: string;
   mode: 'demo' | 'live';
+  // Bank transfer details shown to parents on the Pay Now screen — left unset until
+  // a finance admin fills them in via Setup; the UI shows "Not configured yet" until then.
+  bankAccountName?: string;
+  bankName?: string;
+  bankIban?: string;
+  openingHours?: string;
 }

@@ -72,6 +72,17 @@ export default function SystemSettingsPage() {
       </div>
 
       <div className="plato-card p-5 space-y-4">
+        <h3 className="text-[13px] font-semibold text-white/60 uppercase tracking-widest flex items-center gap-2"><CreditCard size={14} /> Payment Details</h3>
+        <p className="text-[11px] text-white/30">Shown to parents on the Pay Now screen. Leave blank to show "Not configured yet" until you're ready to publish real bank details.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {field('Bank Account Name', form.bankAccountName || '', (v) => setForm((f) => ({ ...f, bankAccountName: v })))}
+          {field('Bank Name', form.bankName || '', (v) => setForm((f) => ({ ...f, bankName: v })))}
+          {field('IBAN', form.bankIban || '', (v) => setForm((f) => ({ ...f, bankIban: v })))}
+          {field('Branch Opening Hours', form.openingHours || '', (v) => setForm((f) => ({ ...f, openingHours: v })))}
+        </div>
+      </div>
+
+      <div className="plato-card p-5 space-y-4">
         <h3 className="text-[13px] font-semibold text-white/60 uppercase tracking-widest flex items-center gap-2"><Bell size={14} /> Notifications & Integrations</h3>
         <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
           <div>

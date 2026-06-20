@@ -36,6 +36,15 @@ function ToastItem({ t, onRemove }: { t: Toast; onRemove: (id: string) => void }
       <div className="flex-1 min-w-0">
         <p className="text-[13px] font-semibold text-white/90 leading-snug">{t.title}</p>
         {t.message && <p className="text-[12px] text-white/45 mt-0.5 leading-snug">{t.message}</p>}
+        {t.action && (
+          <button
+            onClick={t.action.onClick}
+            className="text-[12px] font-semibold mt-1.5 hover:underline"
+            style={{ color }}
+          >
+            {t.action.label}
+          </button>
+        )}
       </div>
       <button
         onClick={() => onRemove(t.id)}
